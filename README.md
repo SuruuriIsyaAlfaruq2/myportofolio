@@ -1,1 +1,5 @@
--e "Nama : Suruuri Isya Alfaruq\nNPM : 2506548080\nKelas : PBP E" 
+Nama : Suruuri Isya Alfaruq
+
+NPM : 2506548080
+
+Kelas : PBP E
