@@ -31,7 +31,7 @@ SECRET_KEY = 'django-insecure-ds++nhh$g0)(&3cd)u8=pn&0l%e)z@a)u&!l5))8zxs68qeklo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "suruuri-isya-myportofolio.pws.cs.ui.ac.id"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "suruuri-isya-myportfolio.pws.cs.ui.ac.id"]
 
 # jaga-jaga kalo salah langkah, jadi cuman dicomment
 # ALLOWED_HOSTS = []
