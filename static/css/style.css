@@ -27,8 +27,10 @@ h1, .brand {
 
 .container {
     max-width: 960px;
-    margin: 0 auto;
+    margin-left: auto;
+    margin-right: auto;
     padding: 0 1.5rem;
+    width: 100%;
 }
 
 .site-header {
@@ -99,6 +101,7 @@ h1, .brand {
     color: var(--text-muted);
     max-width: 480px;
     margin-bottom: 1.5rem;
+    text-align: justify;
 }
 
 .meta-list {
@@ -170,7 +173,7 @@ h1, .brand {
 }
 
 .site-footer {
-    padding: 1.5rem;
+    padding: 1.5rem 0; 
     color: var(--text-muted);
     font-size: 0.85rem;
     border-top: 1px solid var(--line);
@@ -197,6 +200,7 @@ h1, .brand {
 .power {
     padding: 4rem 0rem; 
     border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
 }
 
 .section-title {
@@ -211,6 +215,7 @@ h1, .brand {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2.5rem;
+    justify-content: center;
 }
 
 .column-title {
@@ -271,7 +276,6 @@ h1, .brand {
     flex-grow: 1;
 }
 
-/* Layout Khusus Soft Skill */
 .skill-name {
     font-family: "Space Grotesk", -apple-system, sans-serif;
     font-size: 1.1rem;
@@ -285,10 +289,135 @@ h1, .brand {
     line-height: 1.4;
 }
 
-/* Responsivitas Layar Kecil */
 @media (max-width: 768px) {
     .skills-grid {
         grid-template-columns: 1fr;
         gap: 2rem;
+    }
+}
+
+#educations .container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 4rem 1rem;
+}
+
+.education-timeline {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem; 
+}
+
+.education-timeline::before {
+    content: '';
+    position: absolute;
+    left: 19px; 
+    top: 12px;
+    bottom: 12px;
+    width: 2px;
+    background-color: var(--line);
+    z-index: 0;
+}
+
+.edu-row {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    align-items: center; 
+    column-gap: 1.25rem;
+    position: relative;
+}
+
+.edu-dot {
+    justify-self: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background-color: var(--paper);
+    border: 2px solid var(--accent-dark);
+    z-index: 1;
+}
+
+.edu-dot.is-current {
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+
+.desc-column {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.25rem;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    background-color: #ffffff;
+    box-shadow: 4px 4px 0px var(--ink);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.desc-column:hover {
+    transform: translateY(-2px);
+    box-shadow: 6px 6px 0px var(--accent);
+}
+
+.education-logo {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: var(--radius);
+    background-color: var(--paper);
+    border: 1px solid var(--line);
+}
+
+.education-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.desc-education {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.year-education {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--accent-dark);
+    margin: 0 0 0.25rem 0;
+}
+
+.instance-name {
+    font-family: "Space Grotesk", -apple-system, sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 0.2rem 0;
+}
+
+.education-major {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+@media (max-width: 640px) {
+    .edu-row {
+        grid-template-columns: 24px 1fr;
+        column-gap: 0.75rem;
+    }
+    .education-timeline::before {
+        left: 11px;
+    }
+    .education-logo {
+        width: 44px;
+        height: 44px;
     }
 }
