@@ -180,6 +180,9 @@ h1, .brand {
 }
 
 @media (max-width: 600px) {
+    .brand{
+        font-size: 1rem;
+    }
     .hero-grid {
         grid-template-columns: 1fr;
         grid-template-areas:

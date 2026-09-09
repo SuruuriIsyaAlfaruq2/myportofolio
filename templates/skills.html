@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skills - {{ name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
+            <nav>
+                <a href="{% url 'main:show_main' %}">Profile</a>
+                <a href="{% url 'main:show_experience' %}">Experience</a>
+                <a href="{% url 'main:show_skills' %}">Skills</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <!-- TODO : memindahkan data skills dari index.html ke skills.html -->
+        <section class="power" id="skills">
+            <div class="container">
+                <div class="skills-grid">
+    
+                    <!-- Kolom Hard Skills -->
+                    <div class="skills-column">
+                        <h3 class="column-title">Hard Skills</h3>
+                        <div class="skills-list">
+                            {% for skill in skills_list %}
+                                {% if skill.is_hard %}
+                                    <div class="skill-card hard-skill">
+                                        <div class="skill-icon">
+                                            <img src="{{ skill.thumbnail }}" alt="{{ skill.title }} Logo">
+                                        </div>
+                                        <div class="skill-info">
+                                            <p class="skill-desc">{{ skill.title }} {% if skill.description %}({{ skill.description }}){% endif %}</p>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% empty %}
+                                <p class="empty-state">Belum ada skills yang ditambahkan.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Kolom Soft Skills -->
+                    <div class="skills-column">
+                        <h3 class="column-title">Soft Skills</h3>
+                        <div class="skills-list">
+                            {% for skill in skills_list %}
+                                {% if skill.is_soft %}
+                                    <div class="skill-card soft-skill">
+                                        <div class="skill-info">
+                                            <h4 class="skill-name">{{ skill.title }}</h4>
+                                            <p class="skill-desc">{{ skill.description }}</p>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% empty %}
+                                <p class="empty-state">Belum ada skills yang ditambahkan.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
+        </div>
+    </footer>
+</body>
+</html>
