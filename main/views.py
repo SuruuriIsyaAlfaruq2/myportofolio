@@ -3,7 +3,7 @@
 # Create your views here.
 from django.shortcuts import render
 
-from main.models import Experience, Skills
+from main.models import Experience, Skills, Educations
 
 
 def show_main(request):
@@ -31,3 +31,10 @@ def show_skills(request):
         "skills_list": Skills.objects.all()
     }
     return render(request, "skills.html", context)
+
+def show_educations(request):
+    context = {
+        "name": "Suruuri Isya Alfaruq",
+        "educations_list": Educations.objects.all().order_by('-start_year')
+    }
+    return render(request, "educations.html", context)

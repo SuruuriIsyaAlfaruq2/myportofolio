@@ -50,4 +50,19 @@ class Skills(models.Model):
     def is_hard(self):
         return self.category=='hardskills'
 
+class Educations(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    institution = models.CharField(max_length=255)
+    major = models.TextField()
+    thumbnail = models.URLField(blank=True, null=True)
+    start_year = models.IntegerField()
+    end_year = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return self.institution
+
+    @property
+    def is_ongoing(self):
+        return self.end_year is None
+
     
