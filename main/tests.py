@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import escape # untuk menangani string '&' yang tidak terdeteksi karena sifat html yang membacanya dengan &amp; 
 
-from main.models import Experience, Skills
+from main.models import Experience, Skills, Educations
 
 
 class MainTest(TestCase):
@@ -26,6 +26,12 @@ class MainTest(TestCase):
             category="softskills"
         )
 
+        self.educations = Educations.objects.create(
+            institution="Universitas Indonesia",
+            major="S1 Sistem Informasi",
+            start_year=2025
+        )
+
     def test_main_url_is_accessible(self):
         response = self.client.get(reverse("main:show_main"))
 
@@ -36,6 +42,7 @@ class MainTest(TestCase):
         self.assertNotContains(response, self.skills2.title)
         self.assertContains(response, f'href="{reverse("main:show_experience")}"')
         self.assertContains(response, f'href="{reverse("main:show_skills")}"')
+        self.assertContains(response, f'href="{reverse("main:show_educations")}"')
 
     def test_nonexistent_page_returns_404(self):
         response = self.client.get("/halaman-yang-tidak-ada/")
@@ -58,6 +65,11 @@ class MainTest(TestCase):
         self.assertTrue(self.skills2.is_soft)
         self.assertFalse(self.skills2.is_hard)
 
+    def test_educations_model(self):
+        self.assertEqual(str(self.educations), "Universitas Indonesia")
+        self.assertEqual(self.educations.major, "S1 Sistem Informasi")
+        self.assertTrue(self.educations.is_ongoing)
+
     def test_experience_page(self):
         response = self.client.get(reverse("main:show_experience"))
 
@@ -69,6 +81,8 @@ class MainTest(TestCase):
         self.assertContains(response, "Sedang berlangsung")
         self.assertContains(response, f'href="{reverse("main:show_main")}"')
         self.assertContains(response, f'href="{reverse("main:show_experience")}"')
+        self.assertContains(response, f'href="{reverse("main:show_educations")}"')
+
 
     def test_skills_page(self):
         response = self.client.get(reverse("main:show_skills"))
@@ -85,6 +99,21 @@ class MainTest(TestCase):
         self.assertContains(response, "Mengidentifikasi akar masalah teknis dan merumuskan solusi logis secara terstruktur.")
         self.assertContains(response, f'href="{reverse("main:show_main")}"')
         self.assertContains(response, f'href="{reverse("main:show_experience")}"')
+        self.assertContains(response, f'href="{reverse("main:show_educations")}"')
+
+    def test_educations_page(self):
+        response = self.client.get(reverse("main:show_educations"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "educations.html")
+        self.assertContains(response, self.educations.institution)
+        self.assertContains(response, self.educations.major)
+        self.assertContains(response, "2025")
+        self.assertContains(response, "Now")
+        self.assertContains(response, f'href="{reverse("main:show_main")}"')
+        self.assertContains(response, f'href="{reverse("main:show_experience")}"')
+        self.assertContains(response, f'href="{reverse("main:show_educations")}"')
+
 
     def test_empty_experience_page(self):
         Experience.objects.all().delete()
@@ -98,6 +127,12 @@ class MainTest(TestCase):
 
         self.assertContains(response, "Belum ada skills yang ditambahkan.")
 
+    def test_empty_educations_page(self):
+        Educations.objects.all().delete()
+        response = self.client.get(reverse("main:show_educations"))
+
+        self.assertContains(response, "Belum ada educations yang ditambahkan.")
+
     def test_completed_experience(self):
         self.experience.ended_at = timezone.now()
         self.experience.save()
@@ -106,3 +141,13 @@ class MainTest(TestCase):
         self.assertFalse(self.experience.is_ongoing)
         self.assertContains(response, "Selesai")
         self.assertNotContains(response, "Sedang berlangsung")
+    
+    def test_completed_educations(self):
+        self.educations.end_year = 2026
+        self.educations.save()
+        response = self.client.get(reverse("main:show_educations"))
+
+        self.assertFalse(self.educations.is_ongoing)
+        self.assertContains(response, "2026")
+        self.assertNotContains(response, "Now")
+    
