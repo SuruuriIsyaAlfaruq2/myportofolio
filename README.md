@@ -20,5 +20,7 @@ Dalam pengerjaan Tugas 1 ini saya menggunakan Gemini AI untuk membantu saya brai
 2. Jika disatukan pada 1 file, maka jika ada banyak penambahan data akan mempersulit developer karena harus mengetik ulang 1-1 serta juga harus menghapus dengan resiko terhapus semua. namun jika dipisah pada models akan mempermudah penambahan maupun penghapusan data. Selain itu jika disimpan pada models dapat mencantumkan attribute rahasia yang tidak perlu ditampilkan di halaman web namun nantinya diperlukan untuk pengembangan aplikasi seperti adanya id. 
 3. makemigrations adalah perintah untuk mengecek apakah adanya perubahan pada models.py. Jika ada perubahan maka akan menciptakan berkas migrasi yang berisi perubahan model yang belum diaplikasikan ke dalam basis data supaya nantinya dapat menjadi acuan dalam struktur data tabel pada database. Sedangkan migrate mengaplikasikan perubahan model yang tercantum dalam berkas migrasi ke basis data dengan menjalankan perintah sebelumnya. Contoh perubahan yang mengharuskan untuk menjalankan kedua perintah yaitu jika ada penambahan class pada models.py. Seperti yang saya lakukan, ketika saya membuat class Skills pada models.py dengan segala attributenya. saya perlu menjalankan kedua perintah supaya ada berkas migrasinya dan kemudian mengaplikasikannya ke database. Dengan itu saya dapat menambahkan data tentang skills pada databse tanpa perlu mengetik 1-1.
 
+Pada Tugas 2 ini saya menggunakan AI untuk eksplorasi penggunaan shell, karena data saya sempat terduplikasi dan perlu dihapus dari database
+
 
  
