@@ -1,75 +1,80 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% extends "base.html" %}
+{% block meta %}
     <title>Educations - {{ name }}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-    <header class="site-header">
-        <div class="container">
-            <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
-            <nav>
-                <a href="{% url 'main:show_main' %}">Profile</a>
-                <a href="{% url 'main:show_experience' %}">Experience</a>
-                <a href="{% url 'main:show_skills' %}">Skills</a>
-                <a href="{% url 'main:show_educations' %}">Educations</a>
-            </nav>
-        </div>
-    </header>
+{% endblock meta %}
 
+{% block content %}
     <main>
         <section class="will" id="educations">
             <div class="container">
-                <h2 class="section-title">Education</h2>
-                {% for education in educations_list %}
+                <p class="section-kicker">Latar belakang pendidikan</p>
+                
+                <div class="project-header education-header">
+                    <h1>Educations</h1>
+                    <a href="{% url 'main:create_education' %}"
+                       class="button project-add-button education-add-button">
+                        <span aria-hidden="true">+</span>
+                        Tambah Education
+                    </a>
+                </div>
 
-                    <div class="education-timeline">
+                <!-- Form Pencarian Eksklusif Education -->
+                <form method="get"
+                      action="{% url 'main:show_educations' %}"
+                      class="project-search education-search">
+                    <input type="search"
+                           name="institution"
+                           value="{{ institution_query }}"
+                           placeholder="Cari berdasarkan institusi..."
+                           class="project-search__input education-search__input"
+                           aria-label="Cari berdasarkan institusi">
+                    <button type="submit" class="button">Cari</button>
+                </form>
 
+                <div class="education-timeline">
+                    {% for education in educations_list %}
                         <div class="edu-row">
                             {% if education.is_ongoing %}
                                 <span class="edu-dot is-current"></span>
-                                <div class="desc-column">
-                                <div class="education-logo">
-                                    <img src="{{ education.thumbnail }}" alt="Logo {{ education.institution }}">
-                                </div>
-                                <div class="desc-education">
-                                    <p class="year-education">{{ education.start_year }} — Now</p>
-                                    <h3 class="instance-name">{{ education.institution }}</h3>
-                                    <h4 class="education-major">{{ education.major }}</h4>
-                                </div>
-                            </div>
                             {% else %}
                                 <span class="edu-dot"></span>
-                                <div class="desc-column">
-                                <div class="education-logo">
-                                    <img src="{{ education.thumbnail }}" alt="Logo {{ education.institution }}">
-                                </div>
-                                <div class="desc-education">
-                                    <p class="year-education">{{ education.start_year }} — {{ education.start_year }}</p>
-                                    <h3 class="instance-name">{{ education.institution }}</h3>
-                                    <h4 class="education-major">{{ education.major }}</h4>
-                                </div>
-                            </div>
                             {% endif %}
+
+                            <article class="desc-column">
+                                {% if education.thumbnail %}
+                                    <div class="education-logo">
+                                        <img src="{{ education.thumbnail }}" alt="Logo {{ education.institution }}">
+                                    </div>
+                                {% endif %}
+                                <div class="desc-education">
+                                    <p class="year-education">
+                                        {{ education.start_year }} — 
+                                        {% if education.is_ongoing %}
+                                            Now
+                                        {% else %}
+                                            {% if education.end_year %}{{ education.end_year }}{% else %}{{ education.start_year }}{% endif %}
+                                        {% endif %}
+                                    </p>
+                                    <h3 class="instance-name">{{ education.institution }}</h3>
+                                    <h4 class="education-major">
+                                        {% if education.major %}{{ education.major }}{% else %}{{ education.degree }}{% endif %}
+                                    </h4>
+                                </div>
+                                <div class="education-card-actions" style="margin-left: auto; flex-shrink: 0;">
+                                    {% include "components/educations_delete_modal.html" with education=education %}
+                                </div>
+                            </article>
                         </div>
-                {% empty %}
-                    <p class="empty-state">
-                        Belum ada educations yang ditambahkan.
-                    </p>
-                {% endfor %}
+                    {% empty %}
+                        {% if institution_query %}
+                            <p class="empty-state">Tidak ada pendidikan dengan nama institusi "{{ institution_query }}".</p>
+                        {% else %}
+                            <p class="empty-state">Belum ada pendidikan yang ditambahkan.</p>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
             </div>
         </section>
     </main>
-
-    <footer class="site-footer">
-        <div class="container">
-            <p>&copy; 2026 {{ name }}. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
-        </div>
-    </footer>
-</body>
-</html>
+{% endblock content %}
