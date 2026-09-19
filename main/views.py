@@ -147,8 +147,8 @@ def get_educations_json(request):
     educations_json = serializers.serialize("json", educations)
     return HttpResponse(educations_json, content_type="application/json")
 
-def delete_skill(request, skill_id):
-    skill = get_object_or_404(Skills, pk=skill_id)
+def delete_skill(request, skills_id):
+    skill = get_object_or_404(Skills, pk=skills_id)
 
     if request.method == "POST":
         skill.delete()
