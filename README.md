@@ -23,4 +23,4 @@ Dalam pengerjaan Tugas 1 ini saya menggunakan Gemini AI untuk membantu saya brai
 Pada Tugas 2 ini saya menggunakan AI untuk eksplorasi penggunaan shell, karena data saya sempat terduplikasi dan perlu dihapus dari database
 
 
- 
+Test Dummy untuk kebutuhan debugging permasalahan gagal push pws
