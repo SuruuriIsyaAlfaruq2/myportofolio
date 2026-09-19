@@ -24,3 +24,10 @@ Pada Tugas 2 ini saya menggunakan AI untuk eksplorasi penggunaan shell, karena d
 
 
 Test Dummy untuk kebutuhan debugging permasalahan gagal push pws
+
+### Tugas 3
+
+1. Menggunakan ModelForm karena pada django modelForm adalah built-ins library yang merupakan kode standar untuk membuat form. Selain itu penggunaan ModelForm memudahkan pembuatan form karena sifatnya yang reusable dan mudah digunakan. Jika menggunakan HTML akan merepotkan karena data perlu dipastikan valid tipenya, dan perlu integrasi manual ke database, menggunakan ModelForm data otomatis divalidasi sesuai tipe data. Penggunaan CSRF token untuk memastikan bahwa request ke server hanya dapat diakses melalui token tertentu untuk mencegah penyerangan melalui akses yang tidak valid.
+2. Karena JSON lebih disukai dibandingkan dengan XML karena JSON ukurannya lebih ringkas, parsing data yang lebih cepat, dan integrasi yang sangat natural dengan JavaScript di sisi frontend.
+3. Ketika View mendapatkan perintah untuk mengambil data melalui object.all() untuk mendapatkan data dari daabase. Kemudian data tersebut diserialisasi untuk mengubah bentuk data yang sebelumnya berformat django menjadi data berformat JSON. Setelah diubah data dikirimke ke views untuk kemudian dikirimkan kembali ke user. Data perlu diformat ke format JSON menggunakan serialisasi karena Data pada database tidak dipahami untuk semua jenis client, sedangkan format JSON digunakan karena JSON dipahami oleh hampir seluruh jenis client.
+
