@@ -85,6 +85,22 @@ def create_experience(request):
         "form": form,
     }
     return render(request, "experience_form.html", context)
+def edit_experience(request, experience_id):
+    experience = get_object_or_404(Experience, pk=experience_id)
+
+    form = ExperienceForm(request.POST or None, instance=experience)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Experience baru berhasil diperbarui!")
+        return redirect("main:show_experience")
+
+    context = {
+        "name": "Suruuri Isya Alfaruq",
+        "form": form,
+        "experience" : experience,
+    }
+    return render(request, "edit_experience.html", context)
 
 def create_education(request):
     form = EducationsForm(request.POST or None)

@@ -14,6 +14,7 @@ from main.views import (
     delete_education,
     delete_experience,
     delete_skill,
+    edit_experience,
     )
 
 app_name = "main"
@@ -32,4 +33,5 @@ urlpatterns = [
     path("experience/<uuid:experience_id>/delete/",delete_experience,name="delete_experience"),
     path("skills/<uuid:skills_id>/delete/",delete_skill,name="delete_skill"),
     path("educations/<uuid:educations_id>/delete/",delete_education,name="delete_education"),
+    path("experience/<uuid:experience_id>/edit/",edit_experience,name="edit_experience"),
 ]
