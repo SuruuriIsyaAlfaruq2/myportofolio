@@ -1,9 +1,78 @@
-Nama : Suruuri Isya Alfaruq
+# Website Personal Portofolio Berbasis FrameWork Django
 
-NPM : 2506548080
+## Dibuat oleh:
+# Nama : Suruuri Isya Alfaruq
+# NPM : 2506548080
+# Kelas : PBP E
 
-Kelas : PBP E
+## Deskripsi Aplikasi
+Merupakan sebuah aplikasi web portofolio personal yang dirancang untuk menampilkan rekam jejak akademis, keterampilan teknis dan non-teknis, dan pengalaman. Aplikasi ini dibangun dengan arsitektur **Model-Template-View (MTV)** bawaan Django untuk memastikan pemisahan logika bisnis, data, dan tampilan yang rapi dan modular.
 
+## Penerapan Arsitektur MTV (Model-Template-View)
+
+1. **Models (`models.py`)**
+    - Mengelola struktur data mendasar dan interaksi dengan basis data. Dalam proyek ini models mengurus:
+        - **Experience**: Menyimpan *pengalaman* kerja/organisasi/pengalaman lainnya.
+        - **Skills**: Menyimpan *skill* dan kategorinya (Softskill/Hardskill)
+        - **Educations**: Menyimpan institusi, tahun mulai, dan tahun selesai. Ditampilkan secara berurut.
+2. **Template (`templates/`)**
+    - Menggunakan Django Template Language (DTL), berbasis `base.html` untuk menjaga konsistensi komponen UI di seluruh halaman supaya bersih, responsif, dan mudah diakses oleh pengguna.
+    - Menampilkan data dinamis yang dikirim dari View (seperti tampilan untuk data-data pada Models)
+3. **View (`views.py`)**
+    - Bertindak sebagai pemroses logika bisnis utama, menerima permintaan HTTP dari pengguna, memproses atau mengambil data relevan melalui Model, lalu meneruskannya ke Template untuk ditampilkan.
+    - Mengolah form input pengguna untuk penambahan atau pembaruan konten secara terintegrasi.
+
+
+## Panduan Setup & Instalasi Lokal
+
+## 🛠️ Prasyarat Sistem
+
+Sebelum menjalankan proyek, pastikan perangkat Anda telah terpasang:
+* **Python** (versi 3.10 atau yang lebih baru)
+* **pip** (Python Package Installer)
+* **Git**
+        
+1. Klon Repositori & Masuk ke Direktori
+```bash
+git clone https://github.com/SuruuriIsyaAlfaruq2/myportofolio.git
+cd myportofolio
+```
+2. Buat dan Aktifkan Virtual-Environment
+- Pada Linux & macOS:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+``` 
+- Pada Windows:
+```bash
+python3 -m venv venv
+venv/bin/activate
+``` 
+3. Install Requirements Proyek
+```bash
+pip install -r requirements.txt
+```
+4. Migrasi Basis Data
+```bash
+python manage.py migrate
+```
+5. Jalankan pada server lokal
+```bash
+python manage.py runserver
+```
+Kemudian buka pada http://127.0.0.1:8000/
+
+## Pengelolaan Konten Aplikasi
+Seluruh konten situs dikelola langsung melalui fitur dan antarmuka aplikasi.
+Untuk setiap field data Seperti **Experience** **Skills** **Educations** dapat dibuat, edit, dan hapus pada halaman tertentu. *Create* pada form add, *Edit* pada form edit, dan *Delete* pada laman delete. 
+     
+## Menjalankan Pengujian (Testing)
+Proyek ini dilengkapi dengan skenario *unit test* menggunakan kerangka kerja pengujian bawaan Django (`django.test.TestCase`) untuk memastikan keandalan komponen Model, Template, dan View.
+
+Jalankan perintah berikut untuk testing pada MTV
+```bash
+python manage.py test
+```
 
 ### Tugas 1
 
@@ -23,11 +92,17 @@ Dalam pengerjaan Tugas 1 ini saya menggunakan Gemini AI untuk membantu saya brai
 Pada Tugas 2 ini saya menggunakan AI untuk eksplorasi penggunaan shell, karena data saya sempat terduplikasi dan perlu dihapus dari database
 
 
-Test Dummy untuk kebutuhan debugging permasalahan gagal push pws
-
 ### Tugas 3
 
 1. Menggunakan ModelForm karena pada django modelForm adalah built-ins library yang merupakan kode standar untuk membuat form. Selain itu penggunaan ModelForm memudahkan pembuatan form karena sifatnya yang reusable dan mudah digunakan. Jika menggunakan HTML akan merepotkan karena data perlu dipastikan valid tipenya, dan perlu integrasi manual ke database, menggunakan ModelForm data otomatis divalidasi sesuai tipe data. Penggunaan CSRF token untuk memastikan bahwa request ke server hanya dapat diakses melalui token tertentu untuk mencegah penyerangan melalui akses yang tidak valid.
 2. Karena JSON lebih disukai dibandingkan dengan XML karena JSON ukurannya lebih ringkas, parsing data yang lebih cepat, dan integrasi yang sangat natural dengan JavaScript di sisi frontend.
 3. Ketika View mendapatkan perintah untuk mengambil data melalui object.all() untuk mendapatkan data dari daabase. Kemudian data tersebut diserialisasi untuk mengubah bentuk data yang sebelumnya berformat django menjadi data berformat JSON. Setelah diubah data dikirimke ke views untuk kemudian dikirimkan kembali ke user. Data perlu diformat ke format JSON menggunakan serialisasi karena Data pada database tidak dipahami untuk semua jenis client, sedangkan format JSON digunakan karena JSON dipahami oleh hampir seluruh jenis client.
 
+
+### AI Disclosure
+Pernyataan di bawah menggunakan format 
+[Tutorial/Tugas index] - [Deskripsi Singkat]: [URL chat with AI]
+
+Tugas 1 - brainstorming mengenai attribut yang sebaiknya digunakan pada css
+Tugas 2 - Eksplorasi penggunaan shell
+Tugas 3 - Tatacara membuat Deskripsi aplikasi dan Instruksi Setup:https://share.gemini.google/yJpoKnpynzZk 
