@@ -7,7 +7,7 @@
     <main>
         <section class="experience-section skill-section" id="skill">
             <div class="container">
-                <p class="section-kicker">Keahlian dan keahlian teknis</p>
+                <p class="section-kicker">Keahlian Teknis dan Non-Teknis</p>
                 
                 <div class="project-header skill-header">
                     <h1>Skills</h1>
@@ -27,7 +27,7 @@
                            placeholder="Cari berdasarkan nama skill"
                            class="project-search__input skill-search__input"
                            aria-label="Cari berdasarkan nama skill">
-                    <button type="submit" class="button">Cari</button>
+                    <button type="submit" class="button search-button">Cari</button>
                 </form>
 
                 <!-- Gunakan skills-grid murni agar grid 2 kolom berfungsi -->
@@ -53,7 +53,7 @@
                                         </div>
                                         <div class="skill-card-actions">
                                             <a href="{% url 'main:edit_skills' skill.id%}"
-                                            class="button button-secondary">
+                                            class="button button-secondary button-edit-hard-skill">
                                                 <!-- <span aria-hidden="true"></span> -->
                                                 Edit Skill 
                                             </a>
@@ -85,9 +85,9 @@
                                             {% endif %}
                                             <p class="skill-desc">{{ skill.description }}</p>
                                         </div>
-                                        <div class="skill-card-actions">
+                                        <div class="skill-card-actions soft-skill-actions project-actions">
                                             <a href="{% url 'main:edit_skills' skill.id%}"
-                                            class="button button-secondary">
+                                            class="button button-secondary soft-skill-edit-button">
                                                 <!-- <span aria-hidden="true"></span> -->
                                                 Edit Skill 
                                             </a>

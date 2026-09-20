@@ -28,7 +28,7 @@
                            placeholder="Cari berdasarkan institusi..."
                            class="project-search__input education-search__input"
                            aria-label="Cari berdasarkan institusi">
-                    <button type="submit" class="button">Cari</button>
+                    <button type="submit" class="button search-button">Cari</button>
                 </form>
 
                 <div class="education-timeline">
@@ -41,26 +41,29 @@
                             {% endif %}
 
                             <article class="desc-column">
-                                {% if education.thumbnail %}
-                                    <div class="education-logo">
-                                        <img src="{{ education.thumbnail }}" alt="Logo {{ education.institution }}">
+                                <div class="non-information-part">
+
+                                    {% if education.thumbnail %}
+                                        <div class="education-logo">
+                                            <img src="{{ education.thumbnail }}" alt="Logo {{ education.institution }}">
+                                        </div>
+                                    {% endif %}
+                                    <div class="desc-education">
+                                        <p class="year-education">
+                                            {{ education.start_year }} — 
+                                            {% if education.is_ongoing %}
+                                                Now
+                                            {% else %}
+                                                {% if education.end_year %}{{ education.end_year }}{% else %}{{ education.start_year }}{% endif %}
+                                            {% endif %}
+                                        </p>
+                                        <h3 class="instance-name">{{ education.institution }}</h3>
+                                        <h4 class="education-major">
+                                            {% if education.major %}{{ education.major }}{% else %}{{ education.degree }}{% endif %}
+                                        </h4>
                                     </div>
-                                {% endif %}
-                                <div class="desc-education">
-                                    <p class="year-education">
-                                        {{ education.start_year }} — 
-                                        {% if education.is_ongoing %}
-                                            Now
-                                        {% else %}
-                                            {% if education.end_year %}{{ education.end_year }}{% else %}{{ education.start_year }}{% endif %}
-                                        {% endif %}
-                                    </p>
-                                    <h3 class="instance-name">{{ education.institution }}</h3>
-                                    <h4 class="education-major">
-                                        {% if education.major %}{{ education.major }}{% else %}{{ education.degree }}{% endif %}
-                                    </h4>
                                 </div>
-                                <div class="education-card-actions" style="margin-left: auto; flex-shrink: 0;">
+                                <div class="education-card-actions">
                                     <a href="{% url 'main:edit_educations' education.id%}"
                                     class="button button-secondary">
                                         <!-- <span aria-hidden="true"></span> -->

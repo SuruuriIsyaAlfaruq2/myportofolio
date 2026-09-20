@@ -6,9 +6,12 @@
 
 :root {
     --ink: #1c1917;
+    --ink-hover: #3a3533;
     --paper: #faf6f0;
     --accent: #d95d39;
+    --accent-hover:#c24e2c;
     --accent-dark: #a8442a;
+    --accent-dark-hover: #85321d;
     --line: #e3d9c9;
     --text-muted: #6b6459;
     --radius: 4px;
@@ -179,26 +182,7 @@ h1, .brand {
     border-top: 1px solid var(--line);
 }
 
-@media (max-width: 600px) {
-    .brand{
-        font-size: 1rem;
-    }
-    .hero-grid {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-            "identity"
-            "photo"
-            "details";
-    }
 
-    .hero-photo {
-        max-width: 220px;
-    }
-
-    .social-links {
-        justify-content: flex-start;
-    }
-}
 
 .power {
     padding: 4rem 0rem; 
@@ -254,6 +238,7 @@ h1, .brand {
     display: flex;
     align-items: center;
     gap: 1.25rem;
+    justify-content: space-between;
 }
 
 .skill-icon {
@@ -296,12 +281,7 @@ h1, .brand {
     max-width: 200px;
 }
 
-@media (max-width: 768px) {
-    .skills-grid {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-    }
-}
+
 
 #educations .container {
     max-width: 600px;
@@ -353,6 +333,7 @@ h1, .brand {
 .desc-column {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 1.25rem;
     padding: 1.25rem;
     border: 2px solid var(--ink);
@@ -360,6 +341,11 @@ h1, .brand {
     background-color: #ffffff;
     box-shadow: 4px 4px 0px var(--ink);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.non-information-part{
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
 }
 
 .desc-column:hover {
@@ -542,6 +528,9 @@ h1, .brand {
 .button-secondary {
     background: var(--ink);
 }
+.button-secondary:hover {
+    background: var(--ink-hover);
+}
 
 .project-header {
     width: 100%;
@@ -578,6 +567,9 @@ h1, .brand {
     align-items: center;
     gap: 0.45rem;
 }
+.project-add-button:hover{
+    background-color: var(--accent-hover);
+}
 
 .project-add-button span {
     font-size: 1.25rem;
@@ -588,6 +580,10 @@ h1, .brand {
     display: flex;
     gap: 0.75rem;
     margin-bottom: 1.5rem;
+}
+
+.search-button:hover{
+    background-color: var(--accent-hover);
 }
 
 .project-search__input {
@@ -708,6 +704,13 @@ h1, .brand {
 .button-danger {
     background: #b42318;
 }
+.button-danger:hover {
+    background: var(--accent-dark-hover);
+}
+
+.button-edit-hard-skill{
+    width: 100%;
+}
 
 @media (max-width: 600px) {
     .project-header {
@@ -746,5 +749,55 @@ h1, .brand {
     .project-delete-modal__actions .button {
         width: 100%;
         text-align: center;
+    }
+}
+@media (max-width: 768px) {
+    .skills-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    .project-grid{
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+}
+@media (max-width: 600px) {
+    .brand{
+        font-size: 1rem;
+    }
+    .hero-grid {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "identity"
+            "photo"
+            "details";
+    }
+
+    .hero-photo {
+        max-width: 220px;
+    }
+
+    .social-links {
+        justify-content: flex-start;
+    }
+}
+@media (max-width: 640px) {
+    .edu-row {
+        grid-template-columns: 24px 1fr;
+        column-gap: 0.75rem;
+    }
+    .education-timeline::before {
+        left: 11px;
+    }
+    .education-logo {
+        width: 44px;
+        height: 44px;
+    }
+    .desc-column {
+        flex-direction: column ;
+        align-items: flex-start ;
+        gap: 1rem;
+        width: 100%;
+        box-sizing: border-box;
     }
 }
