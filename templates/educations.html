@@ -61,6 +61,11 @@
                                     </h4>
                                 </div>
                                 <div class="education-card-actions" style="margin-left: auto; flex-shrink: 0;">
+                                    <a href="{% url 'main:edit_educations' education.id%}"
+                                    class="button button-secondary">
+                                        <!-- <span aria-hidden="true"></span> -->
+                                        Edit Education 
+                                    </a>
                                     {% include "components/educations_delete_modal.html" with education=education %}
                                 </div>
                             </article>

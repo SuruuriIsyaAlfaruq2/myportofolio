@@ -85,22 +85,6 @@ def create_experience(request):
         "form": form,
     }
     return render(request, "experience_form.html", context)
-def edit_experience(request, experience_id):
-    experience = get_object_or_404(Experience, pk=experience_id)
-
-    form = ExperienceForm(request.POST or None, instance=experience)
-
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, "Experience baru berhasil diperbarui!")
-        return redirect("main:show_experience")
-
-    context = {
-        "name": "Suruuri Isya Alfaruq",
-        "form": form,
-        "experience" : experience,
-    }
-    return render(request, "edit_experience.html", context)
 
 def create_education(request):
     form = EducationsForm(request.POST or None)
@@ -192,3 +176,53 @@ def delete_experience(request, experience_id):
         return redirect("main:show_experience")
 
     return redirect("main:show_experience")
+
+#dipindahkan supaya berkumpul dengan edit lainnya
+def edit_experience(request, experience_id):
+    experience = get_object_or_404(Experience, pk=experience_id)
+
+    form = ExperienceForm(request.POST or None, instance=experience)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Experience berhasil diperbarui!")
+        return redirect("main:show_experience")
+
+    context = {
+        "name": "Suruuri Isya Alfaruq",
+        "form": form,
+        "experience" : experience,
+    }
+    return render(request, "edit_experience.html", context)
+def edit_skills(request, skills_id):
+    skills = get_object_or_404(Skills, pk=skills_id)
+
+    form = SkillsForm(request.POST or None, instance=skills)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Skills berhasil diperbarui!")
+        return redirect("main:show_skills")
+
+    context = {
+        "name": "Suruuri Isya Alfaruq",
+        "form": form,
+        "experience" : skills,
+    }
+    return render(request, "edit_skills.html", context)
+def edit_educations(request, educations_id):
+    educations = get_object_or_404(Educations, pk=educations_id)
+
+    form = EducationsForm(request.POST or None, instance=educations)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Educations baru berhasil diperbarui!")
+        return redirect("main:show_educations")
+
+    context = {
+        "name": "Suruuri Isya Alfaruq",
+        "form": form,
+        "experience" : educations,
+    }
+    return render(request, "edit_educations.html", context)

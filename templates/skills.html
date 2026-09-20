@@ -52,6 +52,11 @@
                                             <p class="skill-desc skill-hard-desc">{{ skill.description }}</p>
                                         </div>
                                         <div class="skill-card-actions">
+                                            <a href="{% url 'main:edit_skills' skill.id%}"
+                                            class="button button-secondary">
+                                                <!-- <span aria-hidden="true"></span> -->
+                                                Edit Skill 
+                                            </a>
                                             {% include "components/skills_delete_modal.html" with skill=skill %}
                                         </div>
                                     </article>
@@ -81,6 +86,11 @@
                                             <p class="skill-desc">{{ skill.description }}</p>
                                         </div>
                                         <div class="skill-card-actions">
+                                            <a href="{% url 'main:edit_skills' skill.id%}"
+                                            class="button button-secondary">
+                                                <!-- <span aria-hidden="true"></span> -->
+                                                Edit Skill 
+                                            </a>
                                             {% include "components/skills_delete_modal.html" with skill=skill %}
                                         </div>
                                     </article>
