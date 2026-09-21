@@ -11,11 +11,13 @@
                 
                 <div class="project-header education-header">
                     <h1>Educations</h1>
-                    <a href="{% url 'main:create_education' %}"
-                       class="button project-add-button education-add-button">
-                        <span aria-hidden="true">+</span>
-                        Tambah Education
-                    </a>
+                    {% if user.is_superuser %}
+                        <a href="{% url 'main:create_education' %}"
+                        class="button project-add-button education-add-button">
+                            <span aria-hidden="true">+</span>
+                            Tambah Education
+                        </a>
+                    {% endif %} 
                 </div>
 
                 <!-- Form Pencarian Eksklusif Education -->
@@ -63,14 +65,17 @@
                                         </h4>
                                     </div>
                                 </div>
-                                <div class="education-card-actions">
-                                    <a href="{% url 'main:edit_educations' education.id%}"
-                                    class="button button-secondary">
-                                        <!-- <span aria-hidden="true"></span> -->
-                                        Edit Education 
-                                    </a>
-                                    {% include "components/educations_delete_modal.html" with education=education %}
-                                </div>
+                                {% if user.is_superuser %}
+                                    <div class="education-card-actions">
+                                        <a href="{% url 'main:edit_educations' education.id%}"
+                                        class="button button-secondary">
+                                            <!-- <span aria-hidden="true"></span> -->
+                                            Edit Education 
+                                        </a>
+                                        {% include "components/educations_delete_modal.html" with education=education %}
+                                    </div>
+                                {% endif %} 
+                                {% include "components/educations_star.html" with educations=education %}
                             </article>
                         </div>
                     {% empty %}

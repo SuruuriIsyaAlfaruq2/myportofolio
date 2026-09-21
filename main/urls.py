@@ -17,6 +17,12 @@ from main.views import (
     edit_experience,
     edit_skills,
     edit_educations,
+    register,
+    login_user,
+    logout_user,
+    toggle_star_educations,
+    toggle_star_experience,
+    toggle_star_skills,
     )
 
 app_name = "main"
@@ -38,4 +44,10 @@ urlpatterns = [
     path("experience/<uuid:experience_id>/edit/",edit_experience,name="edit_experience"),
     path("skills/<uuid:skills_id>/edit/",edit_skills,name="edit_skills"),
     path("educations/<uuid:educations_id>/edit/",edit_educations,name="edit_educations"),
+    path("register/", register, name="register"),
+    path("login/", login_user, name="login"),
+    path("logout/", logout_user, name="logout"),
+    path("experience/<uuid:experience_id>/star/",toggle_star_experience,name="toggle_star_experience"),
+    path("skills/<uuid:skills_id>/star/",toggle_star_skills,name="toggle_star_skills"),
+    path("educations/<uuid:educations_id>/star/",toggle_star_educations,name="toggle_star_educations"),
 ]

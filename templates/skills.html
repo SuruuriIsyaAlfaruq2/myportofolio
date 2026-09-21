@@ -11,11 +11,13 @@
                 
                 <div class="project-header skill-header">
                     <h1>Skills</h1>
-                    <a href="{% url 'main:create_skill' %}"
-                       class="button project-add-button skill-add-button">
-                        <span aria-hidden="true">+</span>
-                        Tambah Skill
-                    </a>
+                    {% if user.is_superuser %}
+                        <a href="{% url 'main:create_skill' %}"
+                        class="button project-add-button skill-add-button">
+                            <span aria-hidden="true">+</span>
+                            Tambah Skill
+                        </a>
+                    {% endif %}
                 </div>
 
                 <form method="get"
@@ -51,14 +53,17 @@
                                             {% endif %}
                                             <p class="skill-desc skill-hard-desc">{{ skill.description }}</p>
                                         </div>
-                                        <div class="skill-card-actions">
-                                            <a href="{% url 'main:edit_skills' skill.id%}"
-                                            class="button button-secondary button-edit-hard-skill">
-                                                <!-- <span aria-hidden="true"></span> -->
-                                                Edit Skill 
-                                            </a>
-                                            {% include "components/skills_delete_modal.html" with skill=skill %}
-                                        </div>
+                                        {% if user.is_superuser %}
+                                            <div class="skill-card-actions">
+                                                <a href="{% url 'main:edit_skills' skill.id%}"
+                                                class="button button-secondary button-edit-hard-skill">
+                                                    <!-- <span aria-hidden="true"></span> -->
+                                                    Edit Skill 
+                                                </a>
+                                                {% include "components/skills_delete_modal.html" with skill=skill %}
+                                            </div>
+                                        {% endif %}
+                                        {% include "components/skills_star.html" with skills=skill %}
                                     </article>
                                 {% endif %}
                             {% empty %}
@@ -85,14 +90,17 @@
                                             {% endif %}
                                             <p class="skill-desc">{{ skill.description }}</p>
                                         </div>
-                                        <div class="skill-card-actions soft-skill-actions project-actions">
-                                            <a href="{% url 'main:edit_skills' skill.id%}"
-                                            class="button button-secondary soft-skill-edit-button">
-                                                <!-- <span aria-hidden="true"></span> -->
-                                                Edit Skill 
-                                            </a>
-                                            {% include "components/skills_delete_modal.html" with skill=skill %}
-                                        </div>
+                                        {% if user.is_superuser %}
+                                            <div class="skill-card-actions soft-skill-actions project-actions">
+                                                <a href="{% url 'main:edit_skills' skill.id%}"
+                                                class="button button-secondary soft-skill-edit-button">
+                                                    <!-- <span aria-hidden="true"></span> -->
+                                                    Edit Skill 
+                                                </a>
+                                                {% include "components/skills_delete_modal.html" with skill=skill %}
+                                            </div>
+                                        {% endif %}
+                                        {% include "components/skills_star.html" with skills=skill %}
                                     </article>
                                 {% endif %}
                             {% empty %}
