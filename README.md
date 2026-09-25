@@ -74,6 +74,14 @@ Jalankan perintah berikut untuk testing pada MTV
 python manage.py test
 ```
 
+## Penjelasan Role pengguna
+
+1. Pengunjung tanpa Login: dapat membaca data, tetapi harus login sebelum melakukan tindakan yang memerlukan akun.
+2. Pengguna biasa: dapat membaca data serta memberikan atau membatalkan star, tetapi tidak dapat membuat, mengubah, atau menghapus data portofolio.
+3. Editor: memiliki hak pengguna biasa dan dapat mengubah data, tetapi tidak dapat membuat atau menghapus data.
+4. Pemilik portofolio (superuser): dapat membuat, mengubah, dan menghapus data, serta memiliki hak pengguna biasa.
+
+
 ### Tugas 1
 
 1. Saya menggunakan <Section> untuk membantu saya memisahkan topik yang ingin ditampilkan. Section saya terbagi menjadi 3 bagian, Section Profile, Skills, dan Educations
@@ -106,3 +114,4 @@ Pernyataan di bawah menggunakan format
 Tugas 1 - brainstorming mengenai attribut yang sebaiknya digunakan pada css
 Tugas 2 - Eksplorasi penggunaan shell
 Tugas 3 - Tatacara membuat Deskripsi aplikasi dan Instruksi Setup:https://share.gemini.google/yJpoKnpynzZk 
+Tugas 4 - Cara merapikan css untuk tombol : https://share.gemini.google/CvSlpaLtdTuc 
