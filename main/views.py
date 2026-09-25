@@ -30,6 +30,7 @@ def show_main(request):
 
 
 def show_experience(request):
+    is_permissible = request.user.is_superuser or request.user.groups.filter(name='Editor').exists() # jika memiliki permisi untuk mengakses edit
     json_response = get_experiences_json(request)
 
     experiences = serializers.deserialize(
@@ -43,10 +44,12 @@ def show_experience(request):
         "name": "Suruuri Isya Alfaruq",
         "experience_list": experiences,
         "title_query": title_query,
+        "is_permissible" : is_permissible,
     }
     return render(request, "experience.html", context)
 
 def show_skills(request):
+    is_permissible = request.user.is_superuser or request.user.groups.filter(name='Editor').exists() # jika memiliki permisi untuk mengakses edit
     json_response = get_skills_json(request)
     
     skills = serializers.deserialize(
@@ -59,10 +62,12 @@ def show_skills(request):
         "name": "Suruuri Isya Alfaruq",
         "skills_list": skills,
         "title_query": title_query,
+        "is_permissible" : is_permissible,
     }
     return render(request, "skills.html", context)
 
 def show_educations(request):
+    is_permissible = request.user.is_superuser or request.user.groups.filter(name='Editor').exists() # jika memiliki permisi untuk mengakses edit
     json_response = get_educations_json(request)
         
     educations = serializers.deserialize(
@@ -76,6 +81,7 @@ def show_educations(request):
         "name": "Suruuri Isya Alfaruq",
         "educations_list": educations,
         "institution_query": institution_query,
+        "is_permissible" : is_permissible,
     }
     return render(request, "educations.html", context)
 
@@ -230,7 +236,8 @@ def edit_experience(request, experience_id):
     # Dua baris berikut yang ditambahkan pada langkah ini.
     # Cek apakah akun yang sedang login adalah superuser (admin/kamu);
     # kalau bukan, hentikan permintaannya dengan 403.
-    if not request.user.is_superuser:
+    is_permissible = request.user.is_superuser or request.user.groups.filter(name='Editor').exists()
+    if not (is_permissible): # kalo bukan superuser/editor gak boleh edit
         raise PermissionDenied
     
     experience = get_object_or_404(Experience, pk=experience_id)
@@ -246,6 +253,7 @@ def edit_experience(request, experience_id):
         "name": "Suruuri Isya Alfaruq",
         "form": form,
         "experience" : experience,
+        "is_permissible" : is_permissible,
     }
     return render(request, "edit_experience.html", context)
 
@@ -254,8 +262,9 @@ def edit_skills(request, skills_id):
     # Dua baris berikut yang ditambahkan pada langkah ini.
     # Cek apakah akun yang sedang login adalah superuser (admin/kamu);
     # kalau bukan, hentikan permintaannya dengan 403.
-    if not request.user.is_superuser:
-        raise PermissionDenied
+    is_permissible = request.user.is_superuser or request.user.groups.filter(name='Editor').exists()
+    if not (is_permissible): # kalo bukan superuser/editor gak boleh edit
+            raise PermissionDenied
     
     skills = get_object_or_404(Skills, pk=skills_id)
 
@@ -270,6 +279,7 @@ def edit_skills(request, skills_id):
         "name": "Suruuri Isya Alfaruq",
         "form": form,
         "experience" : skills,
+        "is_permissible" : is_permissible,
     }
     return render(request, "edit_skills.html", context)
 
@@ -278,8 +288,9 @@ def edit_educations(request, educations_id):
     # Dua baris berikut yang ditambahkan pada langkah ini.
     # Cek apakah akun yang sedang login adalah superuser (admin/kamu);
     # kalau bukan, hentikan permintaannya dengan 403.
-    if not request.user.is_superuser:
-        raise PermissionDenied
+    is_permissible = request.user.is_superuser or request.user.groups.filter(name='Editor').exists()
+    if not (is_permissible): # kalo bukan superuser/editor gak boleh edit
+            raise PermissionDenied
     
     educations = get_object_or_404(Educations, pk=educations_id)
 
@@ -294,6 +305,7 @@ def edit_educations(request, educations_id):
         "name": "Suruuri Isya Alfaruq",
         "form": form,
         "experience" : educations,
+        "is_permissible" : is_permissible,
     }
     return render(request, "edit_educations.html", context)
 

@@ -53,17 +53,19 @@
                                             {% endif %}
                                             <p class="skill-desc skill-hard-desc">{{ skill.description }}</p>
                                         </div>
-                                        {% if user.is_superuser %}
-                                            <div class="skill-card-actions">
+                                        <div class="skill-card-actions">
+                                            {%if is_permissible %}
                                                 <a href="{% url 'main:edit_skills' skill.id%}"
                                                 class="button button-secondary button-edit-hard-skill">
-                                                    <!-- <span aria-hidden="true"></span> -->
-                                                    Edit Skill 
+                                                <!-- <span aria-hidden="true"></span> -->
+                                                Edit Skill 
                                                 </a>
+                                            {%endif%}
+                                            {% if user.is_superuser %}
                                                 {% include "components/skills_delete_modal.html" with skill=skill %}
-                                            </div>
-                                        {% endif %}
-                                        {% include "components/skills_star.html" with skills=skill %}
+                                            {% endif %}
+                                            {% include "components/skills_star.html" with skills=skill %}
+                                        </div>
                                     </article>
                                 {% endif %}
                             {% empty %}
@@ -90,17 +92,19 @@
                                             {% endif %}
                                             <p class="skill-desc">{{ skill.description }}</p>
                                         </div>
-                                        {% if user.is_superuser %}
-                                            <div class="skill-card-actions soft-skill-actions project-actions">
-                                                <a href="{% url 'main:edit_skills' skill.id%}"
-                                                class="button button-secondary soft-skill-edit-button">
-                                                    <!-- <span aria-hidden="true"></span> -->
-                                                    Edit Skill 
-                                                </a>
+                                        <div class="skill-card-actions soft-skill-actions project-actions">
+                                            {%if is_permissible %}
+                                            <a href="{% url 'main:edit_skills' skill.id%}"
+                                            class="button button-secondary soft-skill-edit-button">
+                                                <!-- <span aria-hidden="true"></span> -->
+                                                Edit Skill 
+                                            </a>
+                                            {%endif%}
+                                            {% if user.is_superuser %}
                                                 {% include "components/skills_delete_modal.html" with skill=skill %}
-                                            </div>
-                                        {% endif %}
-                                        {% include "components/skills_star.html" with skills=skill %}
+                                            {% endif %}
+                                            {% include "components/skills_star.html" with skills=skill %}
+                                        </div>
                                     </article>
                                 {% endif %}
                             {% empty %}

@@ -65,17 +65,19 @@
                                         </h4>
                                     </div>
                                 </div>
-                                {% if user.is_superuser %}
-                                    <div class="education-card-actions">
+                                <div class="education-card-actions">
+                                    {%if is_permissible %}
                                         <a href="{% url 'main:edit_educations' education.id%}"
                                         class="button button-secondary">
-                                            <!-- <span aria-hidden="true"></span> -->
-                                            Edit Education 
+                                        <!-- <span aria-hidden="true"></span> -->
+                                        Edit Education 
                                         </a>
+                                    {%endif%}
+                                    {% if user.is_superuser %}
                                         {% include "components/educations_delete_modal.html" with education=education %}
-                                    </div>
-                                {% endif %} 
-                                {% include "components/educations_star.html" with educations=education %}
+                                    {% endif %} 
+                                    {% include "components/educations_star.html" with educations=education %}
+                                </div>
                             </article>
                         </div>
                     {% empty %}
