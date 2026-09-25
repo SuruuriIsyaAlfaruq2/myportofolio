@@ -39,21 +39,19 @@
                             <h2>{{ experience.title }}</h2>
                             <span class="experience-category">{{ experience.category }}</span>
                             <p class="experience-description">{{ experience.description }}</p>
-                                <div class="project-card-actions experience-card-actions">
-                                    <div class="project-actions experience-actions">
-                                        {% if is_permissible %}
-                                            <a href="{% url 'main:edit_experience' experience.id%}"
-                                            class="button button-secondary">
-                                            <!-- <span aria-hidden="true"></span> -->
-                                            Edit Experience 
-                                            </a>
-                                        {% endif %}
-                                        {% if user.is_superuser %}
-                                            {% include "components/experience_delete_modal.html" with experience=experience %}
-                                        {% endif %}
-                                        {% include "components/experience_star.html" with experience=experience %}
-                                    </div>
-                                </div>
+                            <div class="project-actions experience-actions">
+                                {% if is_permissible %}
+                                    <a href="{% url 'main:edit_experience' experience.id%}"
+                                    class="button button-secondary">
+                                    <!-- <span aria-hidden="true"></span> -->
+                                    Edit Experience 
+                                    </a>
+                                {% endif %}
+                                {% if user.is_superuser %}
+                                    {% include "components/experience_delete_modal.html" with experience=experience %}
+                                {% endif %}
+                                {% include "components/experience_star.html" with experience=experience %}
+                            </div>
                         </article>
                     {% empty %}
                         {% if title_query %}
