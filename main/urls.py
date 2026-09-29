@@ -23,6 +23,9 @@ from main.views import (
     toggle_star_educations,
     toggle_star_experience,
     toggle_star_skills,
+    create_experience_ajax,
+    create_education_ajax,
+    create_skill_ajax,
     )
 
 app_name = "main"
@@ -35,12 +38,12 @@ urlpatterns = [
     path("experience/add/", create_experience, name="create_experience"),
     path("educations/add/", create_education, name="create_education"),
     path("skills/add/", create_skill, name="create_skill"),
-    path("api/experiences/", get_experiences_json, name="get_experience_json"),
+    path("api/experiences/", get_experiences_json, name="get_experiences_json"),
     path("api/educations/", get_educations_json, name="get_educations_json"),
     path("api/skills/", get_skills_json, name="get_skills_json"),
     path("experience/<uuid:experience_id>/delete/",delete_experience,name="delete_experience"),
     path("skills/<uuid:skills_id>/delete/",delete_skill,name="delete_skill"),
-    path("educations/<uuid:educations_id>/delete/",delete_education,name="delete_education"),
+    path("educations/<uuid:education_id>/delete/",delete_education,name="delete_education"),
     path("experience/<uuid:experience_id>/edit/",edit_experience,name="edit_experience"),
     path("skills/<uuid:skills_id>/edit/",edit_skills,name="edit_skills"),
     path("educations/<uuid:educations_id>/edit/",edit_educations,name="edit_educations"),
@@ -50,4 +53,7 @@ urlpatterns = [
     path("experience/<uuid:experience_id>/star/",toggle_star_experience,name="toggle_star_experience"),
     path("skills/<uuid:skills_id>/star/",toggle_star_skills,name="toggle_star_skills"),
     path("educations/<uuid:educations_id>/star/",toggle_star_educations,name="toggle_star_educations"),
+    path("experiences/add-ajax/", create_experience_ajax, name="create_experience_ajax"),
+    path("skills/add-ajax/", create_skill_ajax, name="create_skill_ajax"),
+    path("educations/add-ajax/", create_education_ajax, name="create_education_ajax"),
 ]

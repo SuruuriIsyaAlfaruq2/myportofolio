@@ -8,8 +8,9 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core import serializers
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from main.forms import ExperienceForm, EducationsForm, SkillsForm
 from main.models import Experience, Skills, Educations
@@ -31,57 +32,38 @@ def show_main(request):
 
 def show_experience(request):
     is_permissible = request.user.is_superuser or request.user.groups.filter(name='Editor').exists() # jika memiliki permisi untuk mengakses edit
-    json_response = get_experiences_json(request)
-
-    experiences = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-    experiences = [experience.object for experience in experiences]
+    
     title_query = request.GET.get("title", "").strip()
 
     context = {
         "name": "Suruuri Isya Alfaruq",
-        "experience_list": experiences,
         "title_query": title_query,
         "is_permissible" : is_permissible,
+        "form":ExperienceForm(),
     }
     return render(request, "experience.html", context)
 
 def show_skills(request):
     is_permissible = request.user.is_superuser or request.user.groups.filter(name='Editor').exists() # jika memiliki permisi untuk mengakses edit
-    json_response = get_skills_json(request)
     
-    skills = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-    skills = [skill.object for skill in skills]
     title_query = request.GET.get("title", "").strip()
     context = {
         "name": "Suruuri Isya Alfaruq",
-        "skills_list": skills,
         "title_query": title_query,
         "is_permissible" : is_permissible,
+        "form":SkillsForm(),
     }
     return render(request, "skills.html", context)
 
 def show_educations(request):
     is_permissible = request.user.is_superuser or request.user.groups.filter(name='Editor').exists() # jika memiliki permisi untuk mengakses edit
-    json_response = get_educations_json(request)
-        
-    educations = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-    educations = [education.object for education in educations]
-    educations.sort(key=lambda x: x.start_year, reverse=True) # sebagai ganti order_by yang sebelumnya menggunakan Educations.getObjectsAll
+    
     institution_query = request.GET.get("title", "").strip()
     context = {
         "name": "Suruuri Isya Alfaruq",
-        "educations_list": educations,
         "institution_query": institution_query,
         "is_permissible" : is_permissible,
+        "form":EducationsForm(),
     }
     return render(request, "educations.html", context)
 
@@ -155,8 +137,29 @@ def get_experiences_json(request):
     if title_query:
         experiences = experiences.filter(title__icontains=title_query)
 
-    experiences_json = serializers.serialize("json", experiences, use_natural_foreign_keys=True)
-    return HttpResponse(experiences_json, content_type="application/json")
+    # Konstruksi data JSON secara manual agar bisa menyisipkan logika Star
+    data = []
+    for experience in experiences:
+        starred_users = experience.starred_by.all()
+        is_starred = request.user in starred_users if request.user.is_authenticated else False
+        starred_by_names = ", ".join([u.username for u in starred_users])
+
+        data.append({
+            "pk": str(experience.id),
+            "fields": {
+                "title": experience.title,
+                "description": experience.description,
+                "category": experience.category,
+                "thumbnail": experience.thumbnail,
+                "started_at": experience.started_at,
+                "ended_at": experience.ended_at,
+                "star_count": starred_users.count(),
+                "is_starred": is_starred,
+                "starred_by_names": starred_by_names,
+            }
+        })
+
+    return JsonResponse(data, safe=False)
 
 
 def get_skills_json(request):
@@ -166,8 +169,29 @@ def get_skills_json(request):
     if title_query:
         skills = skills.filter(title__icontains=title_query)  
 
-    skills_json = serializers.serialize("json", skills, use_natural_foreign_keys=True)
-    return HttpResponse(skills_json, content_type="application/json")
+    # Konstruksi data JSON secara manual agar bisa menyisipkan logika Star
+    data = []
+    for skill in skills:
+        starred_users = skill.starred_by.all()
+        is_starred = request.user in starred_users if request.user.is_authenticated else False
+        starred_by_names = ", ".join([u.username for u in starred_users])
+
+        data.append({
+            "pk": str(skill.id),
+            "fields": {
+                "title": skill.title,
+                "description": skill.description,
+                "category": skill.category,
+                "thumbnail": skill.thumbnail,
+                "is_hard": getattr(skill, 'is_hard', False),  
+                "is_soft": getattr(skill, 'is_soft', False),
+                "star_count": starred_users.count(),
+                "is_starred": is_starred,
+                "starred_by_names": starred_by_names,
+            }
+        })
+
+    return JsonResponse(data, safe=False)
 
 
 def get_educations_json(request):
@@ -177,8 +201,30 @@ def get_educations_json(request):
     if institution_query:
         educations = educations.filter(institution__icontains=institution_query)  
 
-    educations_json = serializers.serialize("json", educations, use_natural_foreign_keys=True)
-    return HttpResponse(educations_json, content_type="application/json")
+    # Konstruksi data JSON secara manual agar bisa menyisipkan logika Star
+    data = []
+    for education in educations:
+        starred_users = education.starred_by.all()
+        is_starred = request.user in starred_users if request.user.is_authenticated else False
+        starred_by_names = ", ".join([u.username for u in starred_users])
+
+        data.append({
+            "pk": str(education.id),
+            "fields": {
+                "institution": education.institution,
+                "major": education.major,
+                "thumbnail": education.thumbnail,
+                "start_year": education.start_year,
+                "end_year": getattr(education, 'end_year', None),
+                "is_ongoing": getattr(education, 'is_ongoing', False),
+                "star_count": starred_users.count(),
+                "is_starred": is_starred,
+                "starred_by_names": starred_by_names,
+            }
+        })
+
+    return JsonResponse(data, safe=False)
+
 
 @login_required(login_url="/login/")  
 def delete_skill(request, skills_id):
@@ -387,3 +433,55 @@ def toggle_star_educations(request, educations_id):
             educations.starred_by.add(request.user)
 
     return redirect("main:show_educations")
+
+@require_POST
+def create_experience_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menambahkan proyek."},
+            status=403,
+        )
+
+    form = ExperienceForm(request.POST)
+    if form.is_valid():
+        experience = form.save()
+        return JsonResponse(
+            {"message": "Proyek berhasil ditambahkan.", "pk": str(experience.id)},
+            status=201,
+        )
+
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+@require_POST
+def create_skill_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menambahkan proyek."},
+            status=403,
+        )
+
+    form = SkillsForm(request.POST)
+    if form.is_valid():
+        skill = form.save()
+        return JsonResponse(
+            {"message": "Proyek berhasil ditambahkan.", "pk": str(skill.id)},
+            status=201,
+        )
+
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+@require_POST
+def create_education_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menambahkan proyek."},
+            status=403,
+        )
+
+    form = EducationsForm(request.POST)
+    if form.is_valid():
+        education = form.save()
+        return JsonResponse(
+            {"message": "Proyek berhasil ditambahkan.", "pk": str(education.id)},
+            status=201,
+        )
+
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)

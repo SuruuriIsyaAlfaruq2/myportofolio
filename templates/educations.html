@@ -12,84 +12,348 @@
                 <div class="project-header education-header">
                     <h1>Educations</h1>
                     {% if user.is_superuser %}
-                        <a href="{% url 'main:create_education' %}"
-                        class="button project-add-button education-add-button">
+                        <button type="button"
+                                class="button project-add-button education-add-button"
+                                popovertarget="add-education-modal">
                             <span aria-hidden="true">+</span>
                             Tambah Education
-                        </a>
+                        </button>
                     {% endif %} 
                 </div>
 
                 <!-- Form Pencarian Eksklusif Education -->
                 <form method="get"
                       action="{% url 'main:show_educations' %}"
-                      class="project-search education-search">
-                    <input type="search"
+                      class="project-search education-search"
+                      id="project-search-form">
+                    <input type="text"
                            name="institution"
                            value="{{ institution_query }}"
                            placeholder="Cari berdasarkan institusi..."
                            class="project-search__input education-search__input"
-                           aria-label="Cari berdasarkan institusi">
+                           aria-label="Cari berdasarkan institusi"
+                           id="search-input">
                     <button type="submit" class="button search-button">Cari</button>
                 </form>
 
-                <div class="education-timeline">
-                    {% for education in educations_list %}
-                        <div class="edu-row">
-                            {% if education.is_ongoing %}
-                                <span class="edu-dot is-current"></span>
-                            {% else %}
-                                <span class="edu-dot"></span>
-                            {% endif %}
-
-                            <article class="desc-column">
-                                <div class="non-information-part">
-
-                                    {% if education.thumbnail %}
-                                        <div class="education-logo">
-                                            <img src="{{ education.thumbnail }}" alt="Logo {{ education.institution }}">
-                                        </div>
-                                    {% endif %}
-                                    <div class="desc-education">
-                                        <p class="year-education">
-                                            {{ education.start_year }} — 
-                                            {% if education.is_ongoing %}
-                                                Now
-                                            {% else %}
-                                                {% if education.end_year %}{{ education.end_year }}{% else %}{{ education.start_year }}{% endif %}
-                                            {% endif %}
-                                        </p>
-                                        <h3 class="instance-name">{{ education.institution }}</h3>
-                                        <h4 class="education-major">
-                                            {% if education.major %}{{ education.major }}{% else %}{{ education.degree }}{% endif %}
-                                        </h4>
-                                    </div>
-                                </div>
-                                <div class="skill-card-actions education-card-actions">
-                                    {%if is_permissible %}
-                                        <a href="{% url 'main:edit_educations' education.id%}"
-                                        class="button button-secondary">
-                                        <!-- <span aria-hidden="true"></span> -->
-                                        Edit Education 
-                                        </a>
-                                    {%endif%}
-                                    {% if user.is_superuser %}
-                                        {% include "components/educations_delete_modal.html" with education=education %}
-                                    {% endif %} 
-                                    {% include "components/educations_star.html" with educations=education %}
-                                </div>
-                            </article>
-                        </div>
-                    {% empty %}
-                        {% if institution_query %}
-                            <p class="empty-state">Tidak ada pendidikan dengan nama institusi "{{ institution_query }}".</p>
-                        {% else %}
-                            <p class="empty-state">Belum ada pendidikan yang ditambahkan.</p>
-                        {% endif %}
-                    {% endfor %}
+                <!-- Loading State -->
+                <div id="loading" class="empty-state hide">
+                    <p>Memuat Educations...</p>
                 </div>
 
+                <!-- Error State -->
+                <div id="error" class="empty-state hide">
+                    <p>Gagal memuat data Educations. Silakan coba lagi.</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty" class="empty-state hide">
+                    <p>Belum ada Educations yang ditambahkan atau ditemukan.</p>
+                </div>
+
+                <!-- Project Grid -->
+                <div id="grid" class="education-timeline hide"></div>
             </div>
         </section>
     </main>
+
+    {% if user.is_superuser %}
+        {% include "components/education_form_modal.html" %}
+    {% endif %}
+
+    <script>
+        // Konfigurasi Endpoint & Hak Akses
+        const BASE_EDUCATIONS_ENDPOINT = "{% url 'main:get_educations_json' %}";
+        const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
+        const IS_PERMISSIBLE = "{{ is_permissible|yesno:'true,false' }}" === "true";
+        let educationsAbortController;
+
+        // Elemen DOM
+        const loadingState = document.getElementById('loading');
+        const errorState = document.getElementById('error');
+        const emptyState = document.getElementById('empty');
+        const gridContainer = document.getElementById('grid');
+        const searchForm = document.getElementById('project-search-form');
+        const searchInput = document.getElementById('search-input');
+        
+        // Konfigurasi Debouncing
+        const SEARCH_DEBOUNCE_DELAY = 300;
+        let searchDebounceTimer;
+
+        function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
+            if (loadingState) loadingState.classList.toggle('hide', !showLoading);
+            if (errorState) errorState.classList.toggle('hide', !showError);
+            if (emptyState) emptyState.classList.toggle('hide', !showEmpty);
+            if (gridContainer) gridContainer.classList.toggle('hide', !showGrid);
+        }
+
+        // Mengubah karakter khusus HTML menjadi entity agar ditampilkan sebagai teks
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        function buildEducationRowElement(item) {
+            const edu = item.fields;
+            const eduId = item.pk;
+
+            const safeInstitution = escapeHtml(edu.institution);
+            const safeThumbnail = escapeHtml(edu.thumbnail);
+            const safeStartYear = escapeHtml(edu.start_year);
+            const safeEndYear = escapeHtml(edu.end_year);
+            const safeMajor = escapeHtml(edu.major);
+            const safeDegree = escapeHtml(edu.degree);
+            const safeStarredBy = escapeHtml(edu.starred_by_names);
+
+            const rowElement = document.createElement('div');
+            rowElement.className = 'edu-row';
+
+            const dotClass = edu.is_ongoing ? 'edu-dot is-current' : 'edu-dot';
+            const dotHtml = `<span class="${dotClass}"></span>`;
+
+            const thumbnailHtml = edu.thumbnail 
+                ? `<div class="education-logo">
+                    <img src="${safeThumbnail}" alt="Logo ${safeInstitution}">
+                </div>`
+                : '';
+
+            let endYearText = edu.is_ongoing ? 'Now' : (safeEndYear || safeStartYear);
+            const majorOrDegree = safeMajor || safeDegree || '';
+
+            const editUrl = "{% url 'main:edit_educations' '00000000-0000-0000-0000-000000000000' %}"
+                .replace('00000000-0000-0000-0000-000000000000', eduId);
+            const deleteUrl = "{% url 'main:delete_education' '00000000-0000-0000-0000-000000000000' %}"
+                .replace('00000000-0000-0000-0000-000000000000', eduId);
+            const starUrl = "{% url 'main:toggle_star_educations' '00000000-0000-0000-0000-000000000000' %}"
+                .replace('00000000-0000-0000-0000-000000000000', eduId);
+
+            const editHtml = IS_PERMISSIBLE 
+                ? `<a href="${editUrl}" class="button button-secondary">Edit Education</a>` 
+                : '';
+
+            const deleteTriggerHtml = IS_SUPERUSER 
+                ? `<button type="button"
+                        class="button button-danger"
+                        popovertarget="delete-education-${eduId}"
+                        aria-label="Hapus ${safeInstitution}"
+                        title="Hapus education">
+                    Hapus
+                </button>`
+                : '';
+
+            const deleteModalHtml = IS_SUPERUSER 
+                ? `<div id="delete-education-${eduId}"
+                        class="project-delete-modal"
+                        popover="auto"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="delete-education-title-${eduId}">
+                    <button type="button"
+                            class="project-delete-modal__backdrop"
+                            popovertarget="delete-education-${eduId}"
+                            popovertargetaction="hide"
+                            aria-label="Tutup konfirmasi hapus">
+                    </button>
+                    <div class="project-delete-modal__content">
+                        <button type="button"
+                                class="project-delete-modal__close"
+                                popovertarget="delete-education-${eduId}"
+                                popovertargetaction="hide"
+                                aria-label="Tutup konfirmasi hapus">×</button>
+                        <h2 id="delete-education-title-${eduId}">Hapus Education?</h2>
+                        <p>
+                            Apakah Anda yakin ingin menghapus
+                            <strong>${safeInstitution}</strong>?
+                        </p>
+                        <div class="project-delete-modal__actions">
+                            <button type="button"
+                                    class="button button-secondary"
+                                    popovertarget="delete-education-${eduId}"
+                                    popovertargetaction="hide">Batal</button>
+                            <form method="post" action="${deleteUrl}">
+                                {% csrf_token %}
+                                <button type="submit" class="button button-danger">
+                                    Ya, Hapus
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>`
+                : '';
+
+            const isStarredClass = edu.is_starred ? " is-starred" : "";
+            const starText = edu.is_starred ? "Unstar" : "Star";
+            const starTitle = edu.star_count > 0 
+                ? `Dibintangi oleh ${safeStarredBy}` 
+                : "Jadilah yang pertama memberi star";
+
+            const starFormHtml = `
+                <form method="post" action="${starUrl}" class="star-form" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" 
+                            class="button button-star${isStarredClass}"
+                            title="${starTitle}">
+                        <span aria-hidden="true">★</span>
+                        ${starText}
+                        <span class="star-count">${Number(edu.star_count) || 0}</span>
+                    </button>
+                </form>
+            `;
+
+            rowElement.innerHTML = `
+                ${dotHtml}
+                <article class="desc-column">
+                    <div class="non-information-part">
+                        ${thumbnailHtml}
+                        <div class="desc-education">
+                            <p class="year-education">
+                                ${safeStartYear} — ${endYearText}
+                            </p>
+                            <h3 class="instance-name">${safeInstitution}</h3>
+                            <h4 class="education-major">${majorOrDegree}</h4>
+                        </div>
+                    </div>
+
+                    <div class="skill-card-actions education-card-actions">
+                        ${editHtml}
+                        ${deleteTriggerHtml}
+                        ${starFormHtml}
+                    </div>
+                </article>
+                ${deleteModalHtml}
+            `;
+            return rowElement;
+        }
+
+        async function fetchEducations(searchQuery = "") {
+            if (educationsAbortController) educationsAbortController.abort();
+            educationsAbortController = new AbortController();
+
+            try {
+                displayPageSection({ showLoading: true });
+
+                const url = searchQuery 
+                    ? `${BASE_EDUCATIONS_ENDPOINT}?institution=${encodeURIComponent(searchQuery)}` 
+                    : BASE_EDUCATIONS_ENDPOINT;
+
+                const response = await fetch(url, {
+                    headers: { 'Accept': 'application/json' },
+                    signal: educationsAbortController.signal,
+                });
+
+                if (!response.ok) throw new Error('Gagal memuat data education');
+
+                const educationData = await response.json();
+
+                if (educationData.length === 0) {
+                    displayPageSection({ showEmpty: true });
+                } else {
+                    gridContainer.innerHTML = '';
+                    educationData.forEach(item => {
+                        gridContainer.appendChild(buildEducationRowElement(item));
+                    });
+                    displayPageSection({ showGrid: true });
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') return;
+                console.error('Error loading educations:', error);
+                displayPageSection({ showError: true });
+            }
+        }
+
+        function searchProjects() {
+            const query = searchInput ? searchInput.value.trim() : "";
+            fetchEducations(query);
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener("input", function() {
+                clearTimeout(searchDebounceTimer);
+
+                searchDebounceTimer = setTimeout(function() {
+                    searchProjects();
+                }, SEARCH_DEBOUNCE_DELAY);
+            });
+        }
+
+        if (searchForm) {
+            searchForm.addEventListener("submit", function(event) {
+                event.preventDefault();
+                clearTimeout(searchDebounceTimer);
+                searchProjects();
+            });
+        }
+
+        searchProjects();
+
+        // --- AJAX Form Submit untuk Education ---
+        const CREATE_EDUCATION_ENDPOINT = "{% url 'main:create_education_ajax' %}";
+        const educationForm = document.getElementById('education-form');
+
+        // Membaca nilai cookie, digunakan untuk mengambil token CSRF
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Fungsi untuk menutup modal education
+        function closeEducationModal() {
+            const modalElement = document.getElementById("add-education-modal");
+            if (modalElement && typeof modalElement.hidePopover === "function") {
+                modalElement.hidePopover();
+            }
+        }
+
+        // Mengirim data form education ke server
+        async function addEducation(event) {
+            event.preventDefault();
+
+            const submitButton = educationForm.querySelector('button[type="submit"]');
+            if (submitButton) submitButton.disabled = true;
+
+            try {
+                const response = await fetch(CREATE_EDUCATION_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                    body: new FormData(educationForm),
+                });
+                const result = await response.json().catch(() => ({}));
+
+                if (response.ok) {
+                    educationForm.reset();
+                    closeEducationModal();
+                    showToast('Berhasil', 'Education baru berhasil ditambahkan!', 'success');
+                    fetchEducations(searchInput ? searchInput.value.trim() : "");
+                } else {
+                    const errorMessages = result.errors
+                        ? Object.values(result.errors).flat().map(error => error.message)
+                        : [result.message || `Terjadi kesalahan (status ${response.status}).`];
+                    showToast('Gagal menambahkan education', errorMessages.join(' '), 'error');
+                }
+            } catch (error) {
+                console.error('Error adding education:', error);
+                showToast('Gagal menambahkan education', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
+            } finally {
+                if (submitButton) submitButton.disabled = false;
+            }
+        }
+
+        if (educationForm) {
+            educationForm.addEventListener('submit', addEducation);
+        }
+    </script>
 {% endblock content %}
