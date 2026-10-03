@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import escape # untuk menangani string '&' yang tidak terdeteksi karena sifat html yang membacanya dengan &amp; 
+from django.contrib.auth.models import Group, User
 
 from main.models import Experience, Skills, Educations
 
@@ -114,6 +115,108 @@ class MainTest(TestCase):
         self.assertContains(response, f'href="{reverse("main:show_experience")}"')
         self.assertContains(response, f'href="{reverse("main:show_educations")}"')
 
+    def test_dynamic_experience_and_education_pages_include_star_forms(self):
+        experience_response = self.client.get(reverse("main:show_experience"))
+        education_response = self.client.get(reverse("main:show_educations"))
+
+        self.assertContains(experience_response, "function buildExperienceCardElement")
+        self.assertContains(
+            experience_response,
+            reverse("main:toggle_star_experience", args=["00000000-0000-0000-0000-000000000000"]),
+        )
+        self.assertContains(experience_response, 'class="star-form"')
+        self.assertContains(education_response, "function buildEducationCardElement")
+        self.assertContains(
+            education_response,
+            reverse("main:toggle_star_educations", args=["00000000-0000-0000-0000-000000000000"]),
+        )
+        self.assertContains(education_response, 'class="star-form"')
+
+    def test_experience_and_education_json_include_star_state(self):
+        user = User.objects.create_user(username="star-user", password="test-password")
+        self.experience.starred_by.add(user)
+        self.educations.starred_by.add(user)
+        self.client.force_login(user)
+
+        experience_response = self.client.get(reverse("main:get_experiences_json"))
+        education_response = self.client.get(
+            reverse("main:get_educations_json"),
+            {"institution": "Universitas"},
+        )
+
+        self.assertEqual(experience_response.status_code, 200)
+        self.assertTrue(experience_response.json()[0]["fields"]["is_starred"])
+        self.assertEqual(experience_response.json()[0]["fields"]["star_count"], 1)
+        self.assertEqual(education_response.status_code, 200)
+        self.assertEqual(len(education_response.json()), 1)
+        self.assertTrue(education_response.json()[0]["fields"]["is_starred"])
+        self.assertEqual(education_response.json()[0]["fields"]["star_count"], 1)
+
+    def test_edit_ajax_updates_existing_records_and_prefills_edit_forms(self):
+        editor = User.objects.create_user(username="editor", password="test-password")
+        editor.groups.add(Group.objects.create(name="Editor"))
+        self.client.force_login(editor)
+
+        experience_page = self.client.get(reverse("main:show_experience"))
+        education_page = self.client.get(reverse("main:show_educations"))
+        skills_page = self.client.get(reverse("main:show_skills"))
+        self.assertContains(experience_page, 'id="edit_id_title"')
+        self.assertContains(education_page, 'id="edit_id_institution"')
+        self.assertContains(skills_page, 'id="edit_id_title"')
+
+        experience_response = self.client.post(
+            reverse("main:update_experience_ajax", args=[self.experience.id]),
+            {
+                "title": "Experience updated",
+                "description": "Updated description",
+                "category": "research",
+                "thumbnail": "",
+                "started_at": "2025-01-01T10:00",
+                "ended_at": "",
+            },
+        )
+        education_response = self.client.post(
+            reverse("main:update_education_ajax", args=[self.educations.id]),
+            {
+                "institution": "Updated University",
+                "major": "Updated major",
+                "thumbnail": "",
+                "start_year": 2024,
+                "end_year": "",
+            },
+        )
+        skill_response = self.client.post(
+            reverse("main:update_skill_ajax", args=[self.skills1.id]),
+            {
+                "category": "softskills",
+                "title": "Updated skill",
+                "description": "Updated skill description",
+                "thumbnail": "",
+            },
+        )
+
+        self.assertEqual(experience_response.status_code, 200)
+        self.assertEqual(education_response.status_code, 200)
+        self.assertEqual(skill_response.status_code, 200)
+        self.experience.refresh_from_db()
+        self.educations.refresh_from_db()
+        self.skills1.refresh_from_db()
+        self.assertEqual(self.experience.title, "Experience updated")
+        self.assertEqual(self.educations.institution, "Updated University")
+        self.assertEqual(self.skills1.title, "Updated skill")
+
+    def test_edit_ajax_rejects_invalid_form_data(self):
+        editor = User.objects.create_user(username="editor", password="test-password")
+        editor.groups.add(Group.objects.create(name="Editor"))
+        self.client.force_login(editor)
+
+        response = self.client.post(
+            reverse("main:update_education_ajax", args=[self.educations.id]),
+            {"institution": "", "major": "", "start_year": "not-a-year"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("errors", response.json())
 
     def test_empty_experience_page(self):
         Experience.objects.all().delete()

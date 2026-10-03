@@ -1,40 +1,37 @@
-<p class="experience-status">
-    <button type="button"
-            class="button button-danger"
-            popovertarget="delete-experience-{{ experience.id }}"
-            aria-label="Hapus {{ experience.title }}"
-            title="Hapus experience">
-        Hapus Experience
-    </button>
-</p>
-<div id="delete-experience-{{ experience.id }}"
+
+<div id="global-delete-modal"
      class="project-delete-modal"
      popover="auto"
      role="dialog"
      aria-modal="true"
-     aria-labelledby="delete-experience-title-{{ experience.id }}">
+     aria-labelledby="global-delete-title">
     <button type="button"
             class="project-delete-modal__backdrop"
-            popovertarget="delete-experience-{{ experience.id }}"
+            popovertarget="global-delete-modal"
             popovertargetaction="hide"
+            onclick="closeDeleteModal()"
             aria-label="Tutup konfirmasi hapus"></button>
     <div class="project-delete-modal__content">
         <button type="button"
                 class="project-delete-modal__close"
-                popovertarget="delete-experience-{{ experience.id }}"
+                popovertarget="global-delete-modal"
                 popovertargetaction="hide"
+                onclick="closeDeleteModal()"
                 aria-label="Tutup konfirmasi hapus">×</button>
-        <h2 id="delete-experience-title-{{ experience.id }}">Hapus Experience?</h2>
+        <h2 id="global-delete-title">Hapus Experience?</h2>
         <p>
             Apakah Anda yakin ingin menghapus
-            <strong>{{ experience.title }}</strong>?
+            <strong id="global-delete-item-title">item ini</strong>?
         </p>
         <div class="project-delete-modal__actions">
             <button type="button"
                     class="button button-secondary"
-                    popovertarget="delete-experience-{{ experience.id }}"
-                    popovertargetaction="hide">Batal</button>
-            <form method="post" action="{% url 'main:delete_experience' experience.id %}">
+                    popovertarget="global-delete-modal"
+                    popovertargetaction="hide"
+                    onclick="closeDeleteModal()">Batal</button>
+            
+            <!-- Action form dikosongkan karena URL ditangani oleh JS -->
+            <form id="global-delete-form" onsubmit="executeDeleteAjax(event)">
                 {% csrf_token %}
                 <button type="submit" class="button button-danger">Ya, Hapus</button>
             </form>

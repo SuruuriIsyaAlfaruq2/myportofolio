@@ -1,40 +1,39 @@
-<p class="experience-status skill-status">
-    <button type="button"
-            class="button button-danger"
-            popovertarget="delete-skill-{{ skill.id }}"
-            aria-label="Hapus {{ skill.name }}"
-            title="Hapus skill">
-        Hapus Skill
-    </button>
-</p>
-<div id="delete-skill-{{ skill.id }}"
+<div id="global-delete-skill-modal"
      class="project-delete-modal skill-delete-modal"
      popover="auto"
      role="dialog"
      aria-modal="true"
-     aria-labelledby="delete-skill-title-{{ skill.id }}">
+     aria-labelledby="global-delete-skill-title">
+    
     <button type="button"
             class="project-delete-modal__backdrop skill-delete-modal__backdrop"
-            popovertarget="delete-skill-{{ skill.id }}"
+            popovertarget="global-delete-skill-modal"
             popovertargetaction="hide"
+            onclick="closeDeleteSkillModal()"
             aria-label="Tutup konfirmasi hapus"></button>
+
     <div class="project-delete-modal__content skill-delete-modal__content">
         <button type="button"
                 class="project-delete-modal__close skill-delete-modal__close"
-                popovertarget="delete-skill-{{ skill.id }}"
+                popovertarget="global-delete-skill-modal"
                 popovertargetaction="hide"
+                onclick="closeDeleteSkillModal()"
                 aria-label="Tutup konfirmasi hapus">×</button>
-        <h2 id="delete-skill-title-{{ skill.id }}">Hapus Skill?</h2>
+
+        <h2 id="global-delete-skill-title">Hapus Skill?</h2>
         <p>
             Apakah Anda yakin ingin menghapus
-            <strong>{{ skill.name }}</strong>?
+            <strong id="global-delete-skill-name">skill ini</strong>?
         </p>
+
         <div class="project-delete-modal__actions skill-delete-modal__actions">
             <button type="button"
                     class="button button-secondary"
-                    popovertarget="delete-skill-{{ skill.id }}"
-                    popovertargetaction="hide">Batal</button>
-            <form method="post" action="{% url 'main:delete_skill' skill.id %}">
+                    popovertarget="global-delete-skill-modal"
+                    popovertargetaction="hide"
+                    onclick="closeDeleteSkillModal()">Batal</button>
+
+            <form id="global-delete-skill-form" onsubmit="executeDeleteSkillAjax(event)">
                 {% csrf_token %}
                 <button type="submit" class="button button-danger">Ya, Hapus</button>
             </form>

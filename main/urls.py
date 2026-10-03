@@ -26,6 +26,9 @@ from main.views import (
     create_experience_ajax,
     create_education_ajax,
     create_skill_ajax,
+    update_experience_ajax,
+    update_education_ajax,
+    update_skill_ajax,
     )
 
 app_name = "main"
@@ -56,4 +59,7 @@ urlpatterns = [
     path("experiences/add-ajax/", create_experience_ajax, name="create_experience_ajax"),
     path("skills/add-ajax/", create_skill_ajax, name="create_skill_ajax"),
     path("educations/add-ajax/", create_education_ajax, name="create_education_ajax"),
+    path("experience/<uuid:experience_id>/edit-ajax/", update_experience_ajax, name="update_experience_ajax"),
+    path("educations/<uuid:educations_id>/edit-ajax/", update_education_ajax, name="update_education_ajax"),
+    path("skills/<uuid:skills_id>/edit-ajax/", update_skill_ajax, name="update_skill_ajax"),
 ]

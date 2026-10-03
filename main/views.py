@@ -16,6 +16,12 @@ from main.forms import ExperienceForm, EducationsForm, SkillsForm
 from main.models import Experience, Skills, Educations
 
 
+def _form_with_prefixed_ids(form, prefix):
+    for field in form:
+        field.field.widget.attrs["id"] = f"{prefix}_{field.auto_id}"
+    return form
+
+
 def show_main(request):
     last_login = request.COOKIES.get('last_login', 'Belum ada sesi login / Cookie tidak ditemukan')
     context = {
@@ -40,6 +46,7 @@ def show_experience(request):
         "title_query": title_query,
         "is_permissible" : is_permissible,
         "form":ExperienceForm(),
+        "edit_form": _form_with_prefixed_ids(ExperienceForm(), "edit"),
     }
     return render(request, "experience.html", context)
 
@@ -52,6 +59,7 @@ def show_skills(request):
         "title_query": title_query,
         "is_permissible" : is_permissible,
         "form":SkillsForm(),
+        "edit_form": _form_with_prefixed_ids(SkillsForm(), "edit"),
     }
     return render(request, "skills.html", context)
 
@@ -64,6 +72,7 @@ def show_educations(request):
         "institution_query": institution_query,
         "is_permissible" : is_permissible,
         "form":EducationsForm(),
+        "edit_form": _form_with_prefixed_ids(EducationsForm(), "edit"),
     }
     return render(request, "educations.html", context)
 
@@ -226,56 +235,56 @@ def get_educations_json(request):
     return JsonResponse(data, safe=False)
 
 
-@login_required(login_url="/login/")  
+@login_required(login_url="/login/")
+@require_POST
 def delete_skill(request, skills_id):
-    # Dua baris berikut yang ditambahkan pada langkah ini.
-    # Cek apakah akun yang sedang login adalah superuser (admin/kamu);
-    # kalau bukan, hentikan permintaannya dengan 403.
     if not request.user.is_superuser:
-        raise PermissionDenied
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menghapus skill."},
+            status=403,
+        )
     
     skill = get_object_or_404(Skills, pk=skills_id)
+    skill.delete()
 
-    if request.method == "POST":
-        skill.delete()
-        messages.success(request, "Skill berhasil dihapus!")
-        return redirect("main:show_skills")
+    return JsonResponse(
+        {"message": "Skill berhasil dihapus."},
+        status=200,
+    )
 
-    return redirect("main:show_skills")
-
-@login_required(login_url="/login/")  
+@login_required(login_url="/login/")
+@require_POST
 def delete_education(request, education_id):
-    # Dua baris berikut yang ditambahkan pada langkah ini.
-    # Cek apakah akun yang sedang login adalah superuser (admin/kamu);
-    # kalau bukan, hentikan permintaannya dengan 403.
     if not request.user.is_superuser:
-        raise PermissionDenied
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menghapus education."},
+            status=403,
+        )
     
     education = get_object_or_404(Educations, pk=education_id)
+    education.delete()
 
-    if request.method == "POST":
-        education.delete()
-        messages.success(request, "Education berhasil dihapus!")
-        return redirect("main:show_educations")
-
-    return redirect("main:show_educations")
+    return JsonResponse(
+        {"message": "Education berhasil dihapus."},
+        status=200,
+    )
 
 @login_required(login_url="/login/")  
+@require_POST
 def delete_experience(request, experience_id):
-    # Dua baris berikut yang ditambahkan pada langkah ini.
-    # Cek apakah akun yang sedang login adalah superuser (admin/kamu);
-    # kalau bukan, hentikan permintaannya dengan 403.
     if not request.user.is_superuser:
-        raise PermissionDenied
-    
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menghapus proyek."},
+            status=403,
+        )
+
     experience = get_object_or_404(Experience, pk=experience_id)
+    experience.delete()
 
-    if request.method == "POST":
-        experience.delete()
-        messages.success(request, "Experience berhasil dihapus!")
-        return redirect("main:show_experience")
-
-    return redirect("main:show_experience")
+    return JsonResponse(
+        {"message": "Experience berhasil dihapus."},
+        status=200,
+    )
 
 @login_required(login_url="/login/")  
 def edit_experience(request, experience_id):
@@ -485,3 +494,45 @@ def create_education_ajax(request):
         )
 
     return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+
+
+def _update_object_ajax(request, model, form_class, object_id, success_message):
+    if not request.user.is_authenticated or not (
+        request.user.is_superuser or request.user.groups.filter(name="Editor").exists()
+    ):
+        return JsonResponse(
+            {"message": "Anda tidak memiliki izin untuk mengedit data ini."},
+            status=403,
+        )
+
+    instance = get_object_or_404(model, pk=object_id)
+    form = form_class(request.POST, instance=instance)
+    if not form.is_valid():
+        return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+
+    updated_instance = form.save()
+    return JsonResponse(
+        {"message": success_message, "pk": str(updated_instance.pk)},
+        status=200,
+    )
+
+
+@require_POST
+def update_experience_ajax(request, experience_id):
+    return _update_object_ajax(
+        request, Experience, ExperienceForm, experience_id, "Experience berhasil diperbarui."
+    )
+
+
+@require_POST
+def update_skill_ajax(request, skills_id):
+    return _update_object_ajax(
+        request, Skills, SkillsForm, skills_id, "Skill berhasil diperbarui."
+    )
+
+
+@require_POST
+def update_education_ajax(request, educations_id):
+    return _update_object_ajax(
+        request, Educations, EducationsForm, educations_id, "Education berhasil diperbarui."
+    )

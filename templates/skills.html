@@ -35,20 +35,10 @@
                     <button type="submit" class="button search-button">Cari</button>
                 </form>
 
-                <!-- Loading State -->
-                <div id="loading" class="empty-state hide">
-                    <p>Memuat Skills...</p>
-                </div>
-
-                <!-- Error State -->
-                <div id="error" class="empty-state hide">
-                    <p>Gagal memuat data Skills. Silakan coba lagi.</p>
-                </div>
-
-                <!-- Empty State -->
-                <div id="empty" class="empty-state hide">
-                    <p>Belum ada Skills yang ditambahkan atau ditemukan.</p>
-                </div>
+                <!-- States -->
+                <div id="loading" class="empty-state hide"><p>Memuat Skills...</p></div>
+                <div id="error" class="empty-state hide"><p>Gagal memuat data Skills. Silakan coba lagi.</p></div>
+                <div id="empty" class="empty-state hide"><p>Belum ada Skills yang ditambahkan atau ditemukan.</p></div>
 
                 <!-- Skills Grid -->
                 <div id="grid" class="skills-grid hide"></div>
@@ -58,26 +48,51 @@
 
     {% if user.is_superuser %}
         {% include "components/skill_form_modal.html" %}
+        {% include "components/skills_delete_modal.html" %}
+    {% endif %}
+    {% if is_permissible %}
+        {% include "components/skill_edit_modal.html" %}
     {% endif %}
 
     <script>
-        // Konfigurasi Endpoint & Autorisasi
+        // --- Konfigurasi & State Global ---
         const BASE_SKILLS_ENDPOINT = "{% url 'main:get_skills_json' %}";
+        const CREATE_SKILL_ENDPOINT = "{% url 'main:create_skill_ajax' %}";
+        const UPDATE_SKILL_URL = "{% url 'main:update_skill_ajax' '00000000-0000-0000-0000-000000000000' %}";
         const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
         const IS_PERMISSIBLE = "{{ is_permissible|yesno:'true,false' }}" === "true";
+        
         let skillsAbortController;
+        let activeDeleteSkillUrl = "";
 
-        // Elemen DOM
+        // DOM Elements
         const loadingState = document.getElementById('loading');
         const errorState = document.getElementById('error');
         const emptyState = document.getElementById('empty');
         const gridContainer = document.getElementById('grid'); 
         const searchForm = document.getElementById('project-search-form');
         const searchInput = document.getElementById('search-input');
+        const skillForm = document.getElementById('skill-form');
+        
         const SEARCH_DEBOUNCE_DELAY = 300;
         let searchDebounceTimer;
 
-        // Menampilkan/menyembunyikan bagian halaman berdasarkan status
+        // --- Helper Utilities ---
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
         function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
             if (loadingState) loadingState.classList.toggle('hide', !showLoading);
             if (errorState) errorState.classList.toggle('hide', !showError);
@@ -85,7 +100,6 @@
             if (gridContainer) gridContainer.classList.toggle('hide', !showGrid);
         }
 
-        // Mengubah karakter khusus HTML menjadi entity agar ditampilkan sebagai teks
         function escapeHtml(value) {
             return String(value ?? '')
                 .replaceAll('&', '&amp;')
@@ -95,6 +109,66 @@
                 .replaceAll("'", '&#39;');
         }
 
+        // --- Modal Delete Skills Logic ---
+        function openDeleteSkillModal(skillId, skillTitle, actionUrl) {
+            activeDeleteSkillUrl = actionUrl;
+            
+            const nameEl = document.getElementById("global-delete-skill-name");
+            if (nameEl) nameEl.textContent = skillTitle;
+
+            const modal = document.getElementById("global-delete-skill-modal");
+            if (modal) {
+                modal.classList.remove('hide');
+                if (typeof modal.showPopover === 'function') {
+                    try { modal.showPopover(); } catch (e) {}
+                }
+            }
+        }
+
+        function closeDeleteSkillModal() {
+            const modal = document.getElementById("global-delete-skill-modal");
+            if (!modal) return;
+            if (typeof modal.hidePopover === 'function') {
+                try { modal.hidePopover(); } catch (e) {}
+            }
+            modal.classList.add('hide');
+        }
+
+        async function executeDeleteSkillAjax(event) {
+            event.preventDefault();
+
+            const form = document.getElementById("global-delete-skill-form");
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton) submitButton.disabled = true;
+
+            try {
+                const response = await fetch(activeDeleteSkillUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Accept': 'application/json'
+                    },
+                    body: new FormData(form),
+                });
+
+                const result = await response.json().catch(() => ({}));
+
+                if (response.ok) {
+                    closeDeleteSkillModal();
+                    showToast('Berhasil', result.message || 'Skill berhasil dihapus!', 'success');
+                    fetchSkills(searchInput ? searchInput.value.trim() : "");
+                } else {
+                    showToast('Gagal menghapus', result.message || 'Terjadi kesalahan saat menghapus skill.', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting skill:', error);
+                showToast('Gagal menghapus', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
+            } finally {
+                if (submitButton) submitButton.disabled = false;
+            }
+        }
+
+        // --- Card Builder Functions ---
         function buildHardSkillCard(skill, skillId) {
             const article = document.createElement('article');
             article.className = 'skill-card hard-skill';
@@ -106,38 +180,27 @@
             const safeStarredBy = escapeHtml(skill.starred_by_names);
 
             const iconHtml = skill.thumbnail 
-                ? `<div class="skill-icon">
-                    <img src="${safeThumbnail}" alt="${safeTitle} Logo">
-                </div>`
+                ? `<div class="skill-icon"><img src="${safeThumbnail}" alt="${safeTitle} Logo"></div>`
                 : '';
 
             const categoryHtml = skill.category 
                 ? `<span class="experience-category skill-category">${safeCategory}</span>`
                 : '';
 
-            const editUrl = "{% url 'main:edit_skills' '00000000-0000-0000-0000-000000000000' %}"
-                .replace('00000000-0000-0000-0000-000000000000', skillId);
-            const deleteUrl = "{% url 'main:delete_skill' '00000000-0000-0000-0000-000000000000' %}"
-                .replace('00000000-0000-0000-0000-000000000000', skillId);
-            const starUrl = "{% url 'main:toggle_star_skills' '00000000-0000-0000-0000-000000000000' %}"
-                .replace('00000000-0000-0000-0000-000000000000', skillId);
+            const deleteUrl = "{% url 'main:delete_skill' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', skillId);
+            const starUrl = "{% url 'main:toggle_star_skills' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', skillId);
 
             const editHtml = IS_PERMISSIBLE 
-                ? `<a href="${editUrl}" class="button button-secondary button-edit-hard-skill">Edit Skill</a>` 
+                ? `<button type="button" class="button button-secondary button-edit-hard-skill skill-edit-button">Edit Skill</button>` 
                 : '';
 
             const deleteHtml = IS_SUPERUSER 
-                ? `<form method="post" action="${deleteUrl}" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="button button-danger" onclick="return confirm('Yakin ingin menghapus skill ini?');">Hapus</button>
-                </form>` 
+                ? `<button type="button" class="button button-danger" onclick="openDeleteSkillModal('${skillId}', '${safeTitle}', '${deleteUrl}')">Hapus</button>` 
                 : '';
 
             const isStarredClass = skill.is_starred ? " is-starred" : "";
             const starText = skill.is_starred ? "Unstar" : "Star";
-            const starTitle = skill.star_count > 0 
-                ? `Dibintangi oleh ${safeStarredBy}` 
-                : "Jadilah yang pertama memberi star";
+            const starTitle = skill.star_count > 0 ? `Dibintangi oleh ${safeStarredBy}` : "Jadilah yang pertama memberi star";
 
             article.innerHTML = `
                 ${iconHtml}
@@ -159,6 +222,10 @@
                     </form>
                 </div>
             `;
+            const editButton = article.querySelector('.skill-edit-button');
+            if (editButton) {
+                editButton.addEventListener('click', () => openEditSkill(skill, skillId));
+            }
             return article;
         }
 
@@ -175,29 +242,20 @@
                 ? `<span class="experience-category skill-category">${safeCategory}</span>`
                 : '';
 
-            const editUrl = "{% url 'main:edit_skills' '00000000-0000-0000-0000-000000000000' %}"
-                .replace('00000000-0000-0000-0000-000000000000', skillId);
-            const deleteUrl = "{% url 'main:delete_skill' '00000000-0000-0000-0000-000000000000' %}"
-                .replace('00000000-0000-0000-0000-000000000000', skillId);
-            const starUrl = "{% url 'main:toggle_star_skills' '00000000-0000-0000-0000-000000000000' %}"
-                .replace('00000000-0000-0000-0000-000000000000', skillId);
+            const deleteUrl = "{% url 'main:delete_skill' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', skillId);
+            const starUrl = "{% url 'main:toggle_star_skills' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', skillId);
 
             const editHtml = IS_PERMISSIBLE 
-                ? `<a href="${editUrl}" class="button button-secondary soft-skill-edit-button">Edit Skill</a>` 
+                ? `<button type="button" class="button button-secondary soft-skill-edit-button skill-edit-button">Edit Skill</button>` 
                 : '';
 
             const deleteHtml = IS_SUPERUSER 
-                ? `<form method="post" action="${deleteUrl}" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="button button-danger" onclick="return confirm('Yakin ingin menghapus skill ini?');">Hapus</button>
-                </form>` 
+                ? `<button type="button" class="button button-danger" onclick="openDeleteSkillModal('${skillId}', '${safeTitle}', '${deleteUrl}')">Hapus</button>` 
                 : '';
 
             const isStarredClass = skill.is_starred ? " is-starred" : "";
             const starText = skill.is_starred ? "Unstar" : "Star";
-            const starTitle = skill.star_count > 0 
-                ? `Dibintangi oleh ${safeStarredBy}` 
-                : "Jadilah yang pertama memberi star";
+            const starTitle = skill.star_count > 0 ? `Dibintangi oleh ${safeStarredBy}` : "Jadilah yang pertama memberi star";
 
             article.innerHTML = `
                 <div class="skill-info">
@@ -218,9 +276,14 @@
                     </form>
                 </div>
             `;
+            const editButton = article.querySelector('.skill-edit-button');
+            if (editButton) {
+                editButton.addEventListener('click', () => openEditSkill(skill, skillId));
+            }
             return article;
         }
 
+        // --- Fetch & Search ---
         async function fetchSkills(searchQuery = "") {
             if (skillsAbortController) skillsAbortController.abort();
             skillsAbortController = new AbortController();
@@ -260,23 +323,16 @@
 
                     const hardListEl = document.getElementById('hard-skills-list');
                     const softListEl = document.getElementById('soft-skills-list');
-
-                    const emptyMessage = searchQuery 
-                        ? 'Tidak ada skill dengan nama tersebut.' 
-                        : 'Belum ada skill yang ditambahkan.';
+                    const emptyMessage = searchQuery ? 'Tidak ada skill dengan nama tersebut.' : 'Belum ada skill yang ditambahkan.';
 
                     if (hardSkills.length > 0) {
-                        hardSkills.forEach(item => {
-                            hardListEl.appendChild(buildHardSkillCard(item.fields, item.pk));
-                        });
+                        hardSkills.forEach(item => hardListEl.appendChild(buildHardSkillCard(item.fields, item.pk)));
                     } else {
                         hardListEl.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
                     }
 
                     if (softSkills.length > 0) {
-                        softSkills.forEach(item => {
-                            softListEl.appendChild(buildSoftSkillCard(item.fields, item.pk));
-                        });
+                        softSkills.forEach(item => softListEl.appendChild(buildSoftSkillCard(item.fields, item.pk)));
                     } else {
                         softListEl.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
                     }
@@ -295,47 +351,7 @@
             fetchSkills(query);
         }
 
-        if (searchInput) {
-            searchInput.addEventListener("input", function() {
-                clearTimeout(searchDebounceTimer);
-
-                searchDebounceTimer = setTimeout(function() {
-                    searchProjects();
-                }, SEARCH_DEBOUNCE_DELAY);
-            });
-        }
-
-        if (searchForm) {
-            searchForm.addEventListener("submit", function(event) {
-                event.preventDefault();
-                clearTimeout(searchDebounceTimer);
-                searchProjects();
-            });
-        }
-
-        searchProjects();
-
-        // --- AJAX Form Submit untuk Skill ---
-        const CREATE_SKILL_ENDPOINT = "{% url 'main:create_skill_ajax' %}";
-        const skillForm = document.getElementById('skill-form');
-
-        // Membaca nilai cookie, digunakan untuk mengambil token CSRF
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-
-        // Fungsi untuk menutup modal skill
+        // --- Add Skill Form ---
         function closeSkillModal() {
             const modalElement = document.getElementById("add-skill-modal");
             if (modalElement && typeof modalElement.hidePopover === "function") {
@@ -343,7 +359,6 @@
             }
         }
 
-        // Mengirim data form skill ke server
         async function addSkill(event) {
             event.preventDefault();
 
@@ -377,8 +392,90 @@
             }
         }
 
+        function openEditSkill(skill, skillId) {
+            const form = document.getElementById('edit-skill-form');
+            const modal = document.getElementById('edit-skill-modal');
+            if (!form || !modal) return;
+
+            form.action = UPDATE_SKILL_URL.replace('00000000-0000-0000-0000-000000000000', skillId);
+            form.elements.namedItem('category').value = skill.category || '';
+            form.elements.namedItem('title').value = skill.title || '';
+            form.elements.namedItem('description').value = skill.description || '';
+            form.elements.namedItem('thumbnail').value = skill.thumbnail || '';
+            clearSkillEditErrors(form);
+            modal.showPopover();
+        }
+
+        function clearSkillEditErrors(form) {
+            form.querySelectorAll('.ajax-form-errors').forEach(element => {
+                element.textContent = '';
+            });
+        }
+
+        async function updateSkill(event) {
+            event.preventDefault();
+            const form = event.currentTarget;
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            clearSkillEditErrors(form);
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Accept': 'application/json' },
+                    body: new FormData(form),
+                });
+                const result = await response.json();
+
+                if (!response.ok) {
+                    const messages = [];
+                    Object.entries(result.errors || {}).forEach(([fieldName, fieldErrors]) => {
+                        const target = form.querySelector(`.ajax-form-errors[data-field="${fieldName}"]`);
+                        const fieldMessages = fieldErrors.map(error => error.message);
+                        messages.push(...fieldMessages);
+                        if (target) target.textContent = fieldMessages.join(' ');
+                    });
+                    showToast('Gagal memperbarui skill', messages.join(' ') || result.message || 'Terjadi kesalahan.', 'error');
+                    return;
+                }
+
+                document.getElementById('edit-skill-modal').hidePopover();
+                showToast('Berhasil', result.message, 'success');
+                fetchSkills(searchInput ? searchInput.value.trim() : '');
+            } catch (error) {
+                console.error('Error updating skill:', error);
+                showToast('Gagal memperbarui skill', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
+            } finally {
+                submitButton.disabled = false;
+            }
+        }
+
+        // Event Listeners
+        if (searchInput) {
+            searchInput.addEventListener("input", function() {
+                clearTimeout(searchDebounceTimer);
+                searchDebounceTimer = setTimeout(searchProjects, SEARCH_DEBOUNCE_DELAY);
+            });
+        }
+
+        if (searchForm) {
+            searchForm.addEventListener("submit", function(event) {
+                event.preventDefault();
+                clearTimeout(searchDebounceTimer);
+                searchProjects();
+            });
+        }
+
         if (skillForm) {
             skillForm.addEventListener('submit', addSkill);
         }
+
+        const editSkillForm = document.getElementById('edit-skill-form');
+        if (editSkillForm) {
+            editSkillForm.addEventListener('submit', updateSkill);
+        }
+
+        // Initial Fetch
+        searchProjects();
     </script>
 {% endblock content %}

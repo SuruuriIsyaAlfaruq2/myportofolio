@@ -1,40 +1,39 @@
-<p class="experience-status education-status">
-    <button type="button"
-            class="button button-danger"
-            popovertarget="delete-education-{{ education.id }}"
-            aria-label="Hapus {{ education.institution }}"
-            title="Hapus education">
-        Hapus Education
-    </button>
-</p>
-<div id="delete-education-{{ education.id }}"
+<div id="global-delete-education-modal"
      class="project-delete-modal education-delete-modal"
      popover="auto"
      role="dialog"
      aria-modal="true"
-     aria-labelledby="delete-education-title-{{ education.id }}">
+     aria-labelledby="global-delete-education-title">
+    
     <button type="button"
             class="project-delete-modal__backdrop education-delete-modal__backdrop"
-            popovertarget="delete-education-{{ education.id }}"
+            popovertarget="global-delete-education-modal"
             popovertargetaction="hide"
+            onclick="closeDeleteEducationModal()"
             aria-label="Tutup konfirmasi hapus"></button>
+
     <div class="project-delete-modal__content education-delete-modal__content">
         <button type="button"
                 class="project-delete-modal__close education-delete-modal__close"
-                popovertarget="delete-education-{{ education.id }}"
+                popovertarget="global-delete-education-modal"
                 popovertargetaction="hide"
+                onclick="closeDeleteEducationModal()"
                 aria-label="Tutup konfirmasi hapus">×</button>
-        <h2 id="delete-education-title-{{ education.id }}">Hapus Education?</h2>
+
+        <h2 id="global-delete-education-title">Hapus Education?</h2>
         <p>
             Apakah Anda yakin ingin menghapus
-            <strong>{{ education.institution }}</strong>?
+            <strong id="global-delete-education-institution">pendidikan ini</strong>?
         </p>
+
         <div class="project-delete-modal__actions education-delete-modal__actions">
             <button type="button"
                     class="button button-secondary"
-                    popovertarget="delete-education-{{ education.id }}"
-                    popovertargetaction="hide">Batal</button>
-            <form method="post" action="{% url 'main:delete_education' education.id %}">
+                    popovertarget="global-delete-education-modal"
+                    popovertargetaction="hide"
+                    onclick="closeDeleteEducationModal()">Batal</button>
+
+            <form id="global-delete-education-form" onsubmit="executeDeleteEducationAjax(event)">
                 {% csrf_token %}
                 <button type="submit" class="button button-danger">Ya, Hapus</button>
             </form>

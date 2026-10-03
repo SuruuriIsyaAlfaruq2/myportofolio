@@ -641,22 +641,16 @@ h1, .brand {
     flex: 1 1 180px;
     min-width: 0;
 }
-.project-actions form,
-.project-actions button,
-.project-actions .button {
-    width: 100%;
+.project-delete-modal__actions .button,
+.project-delete-modal__actions form {
     margin: 0;
-    box-sizing: border-box;
+}
+.project-delete-modal__actions .button {
+    font-size: 0.85rem;
+    font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
-    text-align: center;
-}
-
-.project-actions .button {
-    font-size: 0.85rem;
-    font-weight: 600;
-    flex: 1 1 calc(50% - 10px);
 }
 
 .hide {
