@@ -106,6 +106,11 @@ Pada Tugas 2 ini saya menggunakan AI untuk eksplorasi penggunaan shell, karena d
 2. Karena JSON lebih disukai dibandingkan dengan XML karena JSON ukurannya lebih ringkas, parsing data yang lebih cepat, dan integrasi yang sangat natural dengan JavaScript di sisi frontend.
 3. Ketika View mendapatkan perintah untuk mengambil data melalui object.all() untuk mendapatkan data dari daabase. Kemudian data tersebut diserialisasi untuk mengubah bentuk data yang sebelumnya berformat django menjadi data berformat JSON. Setelah diubah data dikirimke ke views untuk kemudian dikirimkan kembali ke user. Data perlu diformat ke format JSON menggunakan serialisasi karena Data pada database tidak dipahami untuk semua jenis client, sedangkan format JSON digunakan karena JSON dipahami oleh hampir seluruh jenis client.
 
+### Tugas 5
+1. Debouncing adalah teknik untuk menunda sebuah fungsi hingga suatu jeda waktu berlalu tanpa event baru. Teknik ini penting karena ketika tanpa debouncing permintaan akan terus-menerus dikirim selama pengguna mengetik. Namun, dengan teknik debouncing permintaan hanya akan dikirim ketika pengguna berhenti mengetik selang beberapa waktu
+2. await merupakan keyword yang hanya bisa digunakan di dalam async function dan berfungsi untuk “menunggu” Promise selesai diproses sebelum melanjutkan ke baris kode berikutnya. Tanpa await, sebuah Promise akan tetap berjalan di belakang layar dan kode berikutnya akan langsung dieksekusi tanpa menunggu hasilnya. Misal, ada variabel yang mengambil data dari database, dan kode setelahnya mencetak data tersebut. Tanpa await, ketika pengambilan data belum selesai, apa yang dicetak bukan merupakan data yang diinginkan.
+3. Cross-Site Scripting (XSS) adalah serangan ketika penyerang berhasil menyisipkan kode JavaScript miliknya ke dalam halaman web yang kemudian dijalankan di browser pengguna lain. Data yang ditampilkan JavaScript lebih rentan karena pada Template Django, dilakukan auto escaping pada setiap { variabel } sehingga browser menampilkannya sebagai teks biasa, bukan sebagai tag HTML. Sedangkan dengan JavaScript, data dari JSON disisipkan ke dalam template literal lalu dipasang lewat innerHTML tanpa adanya auto-escaping.
+
 
 ### AI Disclosure
 Pernyataan di bawah menggunakan format 
@@ -115,3 +120,4 @@ Tugas 1 - brainstorming mengenai attribut yang sebaiknya digunakan pada css
 Tugas 2 - Eksplorasi penggunaan shell
 Tugas 3 - Tatacara membuat Deskripsi aplikasi dan Instruksi Setup:https://share.gemini.google/yJpoKnpynzZk 
 Tugas 4 - Cara merapikan css untuk tombol : https://share.gemini.google/CvSlpaLtdTuc 
+Tugas 5 - Cara implementasi modal delete dan update : https://chatgpt.com/share/6ac0cb4f-e594-83ec-8caf-db37c07944e3
