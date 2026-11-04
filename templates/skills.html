@@ -8,7 +8,6 @@
         <section class="experience-section skill-section" id="skill">
             <div class="container">
                 <p class="section-kicker">Keahlian Teknis dan Non-Teknis</p>
-                
                 <div class="project-header skill-header">
                     <h1>Skills</h1>
                     {% if user.is_superuser %}
@@ -35,12 +34,9 @@
                     <button type="submit" class="button search-button">Cari</button>
                 </form>
 
-                <!-- States -->
                 <div id="loading" class="empty-state hide"><p>Memuat Skills...</p></div>
                 <div id="error" class="empty-state hide"><p>Gagal memuat data Skills. Silakan coba lagi.</p></div>
                 <div id="empty" class="empty-state hide"><p>Belum ada Skills yang ditambahkan atau ditemukan.</p></div>
-
-                <!-- Skills Grid -->
                 <div id="grid" class="skills-grid hide"></div>
             </div>
         </section>
@@ -54,362 +50,242 @@
         {% include "components/skill_edit_modal.html" %}
     {% endif %}
 
+    {% csrf_token %}
+
     <script>
-        // --- Konfigurasi & State Global ---
-        const BASE_SKILLS_ENDPOINT = "{% url 'main:get_skills_json' %}";
-        const CREATE_SKILL_ENDPOINT = "{% url 'main:create_skill_ajax' %}";
-        const UPDATE_SKILL_URL = "{% url 'main:update_skill_ajax' '00000000-0000-0000-0000-000000000000' %}";
+        const BASE_SKILLS_ENDPOINT = "{% url 'api:skills-list' %}";
+        const DETAIL_SKILLS_ENDPOINT = "{% url 'api:skills-detail' '00000000-0000-0000-0000-000000000000' %}";
+        const STAR_SKILLS_ENDPOINT = "{% url 'api:skills-star' '00000000-0000-0000-0000-000000000000' %}";
         const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
         const IS_PERMISSIBLE = "{{ is_permissible|yesno:'true,false' }}" === "true";
-        
-        let skillsAbortController;
-        let activeDeleteSkillUrl = "";
+        const IS_AUTHENTICATED = "{{ user.is_authenticated|yesno:'true,false' }}" === "true";
 
-        // DOM Elements
         const loadingState = document.getElementById('loading');
         const errorState = document.getElementById('error');
         const emptyState = document.getElementById('empty');
-        const gridContainer = document.getElementById('grid'); 
+        const gridContainer = document.getElementById('grid');
         const searchForm = document.getElementById('project-search-form');
         const searchInput = document.getElementById('search-input');
         const skillForm = document.getElementById('skill-form');
-        
-        const SEARCH_DEBOUNCE_DELAY = 300;
+        const editSkillForm = document.getElementById('edit-skill-form');
+        let skillsAbortController;
         let searchDebounceTimer;
+        let activeDeleteId = null;
+        let skillsById = new Map();
 
-        // --- Helper Utilities ---
         function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-
-        function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
-            if (loadingState) loadingState.classList.toggle('hide', !showLoading);
-            if (errorState) errorState.classList.toggle('hide', !showError);
-            if (emptyState) emptyState.classList.toggle('hide', !showEmpty);
-            if (gridContainer) gridContainer.classList.toggle('hide', !showGrid);
+            const prefix = `${name}=`;
+            const cookie = document.cookie.split(';').map(value => value.trim())
+                .find(value => value.startsWith(prefix));
+            return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : null;
         }
 
         function escapeHtml(value) {
-            return String(value ?? '')
-                .replaceAll('&', '&amp;')
-                .replaceAll('<', '&lt;')
-                .replaceAll('>', '&gt;')
-                .replaceAll('"', '&quot;')
-                .replaceAll("'", '&#39;');
+            return String(value ?? '').replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
         }
 
-        // --- Modal Delete Skills Logic ---
-        function openDeleteSkillModal(skillId, skillTitle, actionUrl) {
-            activeDeleteSkillUrl = actionUrl;
-            
-            const nameEl = document.getElementById("global-delete-skill-name");
-            if (nameEl) nameEl.textContent = skillTitle;
+        function skillsEndpoint(pattern, id) {
+            return pattern.replace('00000000-0000-0000-0000-000000000000', id);
+        }
 
-            const modal = document.getElementById("global-delete-skill-modal");
-            if (modal) {
-                modal.classList.remove('hide');
-                if (typeof modal.showPopover === 'function') {
-                    try { modal.showPopover(); } catch (e) {}
-                }
+        function displayPageSection({ showLoading = false, showError = false,
+            showEmpty = false, showGrid = false }) {
+            loadingState.classList.toggle('hide', !showLoading);
+            errorState.classList.toggle('hide', !showError);
+            emptyState.classList.toggle('hide', !showEmpty);
+            gridContainer.classList.toggle('hide', !showGrid);
+        }
+
+        function collectErrorMessages(value, messages = []) {
+            if (typeof value === 'string') messages.push(value);
+            else if (Array.isArray(value)) value.forEach(item => collectErrorMessages(item, messages));
+            else if (value && typeof value === 'object') {
+                Object.values(value).forEach(item => collectErrorMessages(item, messages));
             }
+            return messages;
         }
 
-        function closeDeleteSkillModal() {
-            const modal = document.getElementById("global-delete-skill-modal");
-            if (!modal) return;
-            if (typeof modal.hidePopover === 'function') {
-                try { modal.hidePopover(); } catch (e) {}
+        async function writeSkill(url, method, payload) {
+            const headers = {
+                Accept: 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            };
+            const options = { method, headers, credentials: 'same-origin' };
+            if (payload !== undefined) {
+                headers['Content-Type'] = 'application/json';
+                options.body = JSON.stringify(payload);
             }
-            modal.classList.add('hide');
-        }
 
-        async function executeDeleteSkillAjax(event) {
-            event.preventDefault();
-
-            const form = document.getElementById("global-delete-skill-form");
-            const submitButton = form.querySelector('button[type="submit"]');
-            if (submitButton) submitButton.disabled = true;
-
-            try {
-                const response = await fetch(activeDeleteSkillUrl, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
-                        'Accept': 'application/json'
-                    },
-                    body: new FormData(form),
-                });
-
-                const result = await response.json().catch(() => ({}));
-
-                if (response.ok) {
-                    closeDeleteSkillModal();
-                    showToast('Berhasil', result.message || 'Skill berhasil dihapus!', 'success');
-                    fetchSkills(searchInput ? searchInput.value.trim() : "");
-                } else {
-                    showToast('Gagal menghapus', result.message || 'Terjadi kesalahan saat menghapus skill.', 'error');
-                }
-            } catch (error) {
-                console.error('Error deleting skill:', error);
-                showToast('Gagal menghapus', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
-            } finally {
-                if (submitButton) submitButton.disabled = false;
+            const response = await fetch(url, options);
+            if (response.status === 204) return null;
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                const error = new Error(
+                    collectErrorMessages(data).join(' ') || `Permintaan gagal (HTTP ${response.status}).`,
+                );
+                error.data = data;
+                throw error;
             }
+            return data;
         }
 
-        // --- Card Builder Functions ---
-        function buildHardSkillCard(skill, skillId) {
+        function buildSkillCard(skill) {
             const article = document.createElement('article');
-            article.className = 'skill-card hard-skill';
+            const isHard = skill.category === 'hardskills';
+            article.className = `skill-card ${isHard ? 'hard-skill' : 'soft-skill'}`;
 
             const safeTitle = escapeHtml(skill.title);
-            const safeThumbnail = escapeHtml(skill.thumbnail);
-            const safeCategory = escapeHtml(skill.category);
-            const safeDescription = escapeHtml(skill.description);
-            const safeStarredBy = escapeHtml(skill.starred_by_names);
-
-            const iconHtml = skill.thumbnail 
-                ? `<div class="skill-icon"><img src="${safeThumbnail}" alt="${safeTitle} Logo"></div>`
+            const image = isHard && skill.thumbnail
+                ? `<div class="skill-icon"><img src="${escapeHtml(skill.thumbnail)}" alt="${safeTitle} Logo"></div>`
+                : '';
+            const star = IS_AUTHENTICATED
+                ? `<button type="button" class="button button-star${skill.is_starred ? ' is-starred' : ''}"
+                    data-action="star" data-id="${escapeHtml(skill.id)}"
+                    title="${escapeHtml(skill.starred_by_names)}">
+                    <span aria-hidden="true">★</span> ${skill.is_starred ? 'Unstar' : 'Star'}
+                    <span class="star-count">${Number(skill.star_count) || 0}</span></button>`
+                : `<a href="{% url 'main:login' %}" class="button">Login untuk memberi star (${Number(skill.star_count) || 0})</a>`;
+            const edit = IS_PERMISSIBLE
+                ? `<button type="button" class="button button-secondary" data-action="edit"
+                    data-id="${escapeHtml(skill.id)}">Edit Skill</button>`
+                : '';
+            const remove = IS_SUPERUSER
+                ? `<button type="button" class="button button-danger" data-action="delete"
+                    data-id="${escapeHtml(skill.id)}">Hapus</button>`
                 : '';
 
-            const categoryHtml = skill.category 
-                ? `<span class="experience-category skill-category">${safeCategory}</span>`
-                : '';
-
-            const deleteUrl = "{% url 'main:delete_skill' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', skillId);
-            const starUrl = "{% url 'main:toggle_star_skills' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', skillId);
-
-            const editHtml = IS_PERMISSIBLE 
-                ? `<button type="button" class="button button-secondary button-edit-hard-skill skill-edit-button">Edit Skill</button>` 
-                : '';
-
-            const deleteHtml = IS_SUPERUSER 
-                ? `<button type="button" class="button button-danger" onclick="openDeleteSkillModal('${skillId}', '${safeTitle}', '${deleteUrl}')">Hapus</button>` 
-                : '';
-
-            const isStarredClass = skill.is_starred ? " is-starred" : "";
-            const starText = skill.is_starred ? "Unstar" : "Star";
-            const starTitle = skill.star_count > 0 ? `Dibintangi oleh ${safeStarredBy}` : "Jadilah yang pertama memberi star";
-
-            article.innerHTML = `
-                ${iconHtml}
+            article.innerHTML = `${image}
                 <div class="skill-info">
                     <h4 class="skill-name">${safeTitle}</h4>
-                    ${categoryHtml}
-                    <p class="skill-desc skill-hard-desc">${safeDescription}</p>
+                    <span class="experience-category skill-category">${escapeHtml(skill.category)}</span>
+                    <p class="skill-desc${isHard ? ' skill-hard-desc' : ''}">${escapeHtml(skill.description)}</p>
                 </div>
-                <div class="skill-card-actions hard-skill-actions">
-                    ${editHtml}
-                    ${deleteHtml}
-                    <form method="post" action="${starUrl}" class="star-form" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="button button-star${isStarredClass}" title="${starTitle}">
-                            <span aria-hidden="true">★</span>
-                            ${starText}
-                            <span class="star-count">${Number(skill.star_count) || 0}</span>
-                        </button>
-                    </form>
-                </div>
-            `;
-            const editButton = article.querySelector('.skill-edit-button');
-            if (editButton) {
-                editButton.addEventListener('click', () => openEditSkill(skill, skillId));
-            }
+                <div class="skill-card-actions ${isHard ? 'hard-skill-actions' : 'soft-skill-actions project-actions'}">
+                    ${edit}${remove}${star}
+                </div>`;
             return article;
         }
 
-        function buildSoftSkillCard(skill, skillId) {
-            const article = document.createElement('article');
-            article.className = 'skill-card soft-skill';
-
-            const safeTitle = escapeHtml(skill.title);
-            const safeCategory = escapeHtml(skill.category);
-            const safeDescription = escapeHtml(skill.description);
-            const safeStarredBy = escapeHtml(skill.starred_by_names);
-
-            const categoryHtml = skill.category 
-                ? `<span class="experience-category skill-category">${safeCategory}</span>`
-                : '';
-
-            const deleteUrl = "{% url 'main:delete_skill' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', skillId);
-            const starUrl = "{% url 'main:toggle_star_skills' '00000000-0000-0000-0000-000000000000' %}".replace('00000000-0000-0000-0000-000000000000', skillId);
-
-            const editHtml = IS_PERMISSIBLE 
-                ? `<button type="button" class="button button-secondary soft-skill-edit-button skill-edit-button">Edit Skill</button>` 
-                : '';
-
-            const deleteHtml = IS_SUPERUSER 
-                ? `<button type="button" class="button button-danger" onclick="openDeleteSkillModal('${skillId}', '${safeTitle}', '${deleteUrl}')">Hapus</button>` 
-                : '';
-
-            const isStarredClass = skill.is_starred ? " is-starred" : "";
-            const starText = skill.is_starred ? "Unstar" : "Star";
-            const starTitle = skill.star_count > 0 ? `Dibintangi oleh ${safeStarredBy}` : "Jadilah yang pertama memberi star";
-
-            article.innerHTML = `
-                <div class="skill-info">
-                    <h4 class="skill-name">${safeTitle}</h4>
-                    ${categoryHtml}
-                    <p class="skill-desc">${safeDescription}</p>
-                </div>
-                <div class="skill-card-actions soft-skill-actions project-actions">
-                    ${editHtml}
-                    ${deleteHtml}
-                    <form method="post" action="${starUrl}" class="star-form" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="button button-star${isStarredClass}" title="${starTitle}">
-                            <span aria-hidden="true">★</span>
-                            ${starText}
-                            <span class="star-count">${Number(skill.star_count) || 0}</span>
-                        </button>
-                    </form>
-                </div>
-            `;
-            const editButton = article.querySelector('.skill-edit-button');
-            if (editButton) {
-                editButton.addEventListener('click', () => openEditSkill(skill, skillId));
-            }
-            return article;
-        }
-
-        // --- Fetch & Search ---
-        async function fetchSkills(searchQuery = "") {
+        async function fetchSkills(searchQuery = '') {
             if (skillsAbortController) skillsAbortController.abort();
             skillsAbortController = new AbortController();
-
             try {
                 displayPageSection({ showLoading: true });
-
-                const url = searchQuery 
-                    ? `${BASE_SKILLS_ENDPOINT}?title=${encodeURIComponent(searchQuery)}` 
-                    : BASE_SKILLS_ENDPOINT;
-
+                const url = new URL(BASE_SKILLS_ENDPOINT, window.location.origin);
+                if (searchQuery) url.searchParams.set('title', searchQuery);
                 const response = await fetch(url, {
-                    headers: { 'Accept': 'application/json' },
+                    headers: { Accept: 'application/json' },
+                    credentials: 'same-origin',
                     signal: skillsAbortController.signal,
                 });
+                if (!response.ok) throw new Error(`Permintaan gagal (HTTP ${response.status}).`);
 
-                if (!response.ok) throw new Error('Gagal mengambil data skills');
-
-                const skillsData = await response.json();
-
-                if (skillsData.length === 0) {
+                const skills = await response.json();
+                skillsById = new Map(skills.map(skill => [String(skill.id), skill]));
+                if (skills.length === 0) {
+                    gridContainer.replaceChildren();
                     displayPageSection({ showEmpty: true });
-                } else {
-                    const hardSkills = skillsData.filter(item => item.fields.is_hard);
-                    const softSkills = skillsData.filter(item => item.fields.is_soft);
-
-                    gridContainer.innerHTML = `
-                        <div class="skills-column">
-                            <h3 class="column-title">Hard Skills</h3>
-                            <div class="skills-list" id="hard-skills-list"></div>
-                        </div>
-                        <div class="skills-column">
-                            <h3 class="column-title">Soft Skills</h3>
-                            <div class="skills-list" id="soft-skills-list"></div>
-                        </div>
-                    `;
-
-                    const hardListEl = document.getElementById('hard-skills-list');
-                    const softListEl = document.getElementById('soft-skills-list');
-                    const emptyMessage = searchQuery ? 'Tidak ada skill dengan nama tersebut.' : 'Belum ada skill yang ditambahkan.';
-
-                    if (hardSkills.length > 0) {
-                        hardSkills.forEach(item => hardListEl.appendChild(buildHardSkillCard(item.fields, item.pk)));
-                    } else {
-                        hardListEl.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
-                    }
-
-                    if (softSkills.length > 0) {
-                        softSkills.forEach(item => softListEl.appendChild(buildSoftSkillCard(item.fields, item.pk)));
-                    } else {
-                        softListEl.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
-                    }
-
-                    displayPageSection({ showGrid: true });
+                    return;
                 }
+
+                gridContainer.innerHTML = `
+                    <div class="skills-column">
+                        <h3 class="column-title">Hard Skills</h3>
+                        <div class="skills-list" id="hard-skills-list"></div>
+                    </div>
+                    <div class="skills-column">
+                        <h3 class="column-title">Soft Skills</h3>
+                        <div class="skills-list" id="soft-skills-list"></div>
+                    </div>`;
+                const hardList = document.getElementById('hard-skills-list');
+                const softList = document.getElementById('soft-skills-list');
+                skills.filter(skill => skill.category === 'hardskills')
+                    .forEach(skill => hardList.appendChild(buildSkillCard(skill)));
+                skills.filter(skill => skill.category === 'softskills')
+                    .forEach(skill => softList.appendChild(buildSkillCard(skill)));
+                if (!hardList.childElementCount) {
+                    hardList.innerHTML = '<p class="empty-state">Belum ada skill yang ditambahkan.</p>';
+                }
+                if (!softList.childElementCount) {
+                    softList.innerHTML = '<p class="empty-state">Belum ada skill yang ditambahkan.</p>';
+                }
+                displayPageSection({ showGrid: true });
             } catch (error) {
                 if (error.name === 'AbortError') return;
-                console.error('Error loading skills:', error);
+                console.error('Gagal memuat skills:', error);
                 displayPageSection({ showError: true });
             }
         }
 
-        function searchProjects() {
-            const query = searchInput ? searchInput.value.trim() : "";
-            fetchSkills(query);
+        function buildSkillPayload(form) {
+            const fields = new FormData(form);
+            return {
+                category: fields.get('category'),
+                title: fields.get('title'),
+                description: fields.get('description'),
+                thumbnail: fields.get('thumbnail') || null,
+            };
         }
 
-        // --- Add Skill Form ---
+        function showSkillEditErrors(form, errors) {
+            form.querySelectorAll('.ajax-form-errors').forEach(element => {
+                element.textContent = '';
+            });
+            const messages = [];
+            Object.entries(errors || {}).forEach(([fieldName, fieldErrors]) => {
+                const fieldMessages = collectErrorMessages(fieldErrors);
+                messages.push(...fieldMessages);
+                const target = Array.from(form.querySelectorAll('.ajax-form-errors'))
+                    .find(element => element.dataset.field === fieldName);
+                if (target) target.textContent = fieldMessages.join(' ');
+            });
+            return messages;
+        }
+
+        function openEditSkill(skill) {
+            if (!editSkillForm) return;
+            editSkillForm.action = skillsEndpoint(DETAIL_SKILLS_ENDPOINT, skill.id);
+            editSkillForm.elements.namedItem('category').value = skill.category || '';
+            editSkillForm.elements.namedItem('title').value = skill.title || '';
+            editSkillForm.elements.namedItem('description').value = skill.description || '';
+            editSkillForm.elements.namedItem('thumbnail').value = skill.thumbnail || '';
+            showSkillEditErrors(editSkillForm, {});
+            document.getElementById('edit-skill-modal').showPopover();
+        }
+
         function closeSkillModal() {
-            const modalElement = document.getElementById("add-skill-modal");
-            if (modalElement && typeof modalElement.hidePopover === "function") {
-                modalElement.hidePopover();
-            }
+            const modal = document.getElementById('add-skill-modal');
+            if (modal && typeof modal.hidePopover === 'function') modal.hidePopover();
+        }
+
+        function openDeleteSkillModal(skill) {
+            activeDeleteId = skill.id;
+            document.getElementById('global-delete-skill-name').textContent = skill.title;
+            document.getElementById('global-delete-skill-modal').showPopover();
+        }
+
+        function closeDeleteSkillModal() {
+            const modal = document.getElementById('global-delete-skill-modal');
+            if (modal && typeof modal.hidePopover === 'function') modal.hidePopover();
         }
 
         async function addSkill(event) {
             event.preventDefault();
-
             const submitButton = skillForm.querySelector('button[type="submit"]');
-            if (submitButton) submitButton.disabled = true;
-
+            submitButton.disabled = true;
             try {
-                const response = await fetch(CREATE_SKILL_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': getCookie('csrftoken') },
-                    body: new FormData(skillForm),
-                });
-                const result = await response.json().catch(() => ({}));
-
-                if (response.ok) {
-                    skillForm.reset();
-                    closeSkillModal();
-                    showToast('Berhasil', 'Skill baru berhasil ditambahkan!', 'success');
-                    fetchSkills(searchInput ? searchInput.value.trim() : "");
-                } else {
-                    const errorMessages = result.errors
-                        ? Object.values(result.errors).flat().map(error => error.message)
-                        : [result.message || `Terjadi kesalahan (status ${response.status}).`];
-                    showToast('Gagal menambahkan skill', errorMessages.join(' '), 'error');
-                }
+                await writeSkill(BASE_SKILLS_ENDPOINT, 'POST', buildSkillPayload(skillForm));
+                skillForm.reset();
+                closeSkillModal();
+                showToast('Berhasil', 'Skill berhasil ditambahkan.', 'success');
+                await fetchSkills(searchInput.value.trim());
             } catch (error) {
-                console.error('Error adding skill:', error);
-                showToast('Gagal menambahkan skill', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
+                showToast('Gagal menambahkan skill', error.message, 'error');
             } finally {
-                if (submitButton) submitButton.disabled = false;
+                submitButton.disabled = false;
             }
-        }
-
-        function openEditSkill(skill, skillId) {
-            const form = document.getElementById('edit-skill-form');
-            const modal = document.getElementById('edit-skill-modal');
-            if (!form || !modal) return;
-
-            form.action = UPDATE_SKILL_URL.replace('00000000-0000-0000-0000-000000000000', skillId);
-            form.elements.namedItem('category').value = skill.category || '';
-            form.elements.namedItem('title').value = skill.title || '';
-            form.elements.namedItem('description').value = skill.description || '';
-            form.elements.namedItem('thumbnail').value = skill.thumbnail || '';
-            clearSkillEditErrors(form);
-            modal.showPopover();
-        }
-
-        function clearSkillEditErrors(form) {
-            form.querySelectorAll('.ajax-form-errors').forEach(element => {
-                element.textContent = '';
-            });
         }
 
         async function updateSkill(event) {
@@ -417,65 +293,81 @@
             const form = event.currentTarget;
             const submitButton = form.querySelector('button[type="submit"]');
             submitButton.disabled = true;
-            clearSkillEditErrors(form);
-
+            showSkillEditErrors(form, {});
             try {
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Accept': 'application/json' },
-                    body: new FormData(form),
-                });
-                const result = await response.json();
-
-                if (!response.ok) {
-                    const messages = [];
-                    Object.entries(result.errors || {}).forEach(([fieldName, fieldErrors]) => {
-                        const target = form.querySelector(`.ajax-form-errors[data-field="${fieldName}"]`);
-                        const fieldMessages = fieldErrors.map(error => error.message);
-                        messages.push(...fieldMessages);
-                        if (target) target.textContent = fieldMessages.join(' ');
-                    });
-                    showToast('Gagal memperbarui skill', messages.join(' ') || result.message || 'Terjadi kesalahan.', 'error');
-                    return;
-                }
-
+                await writeSkill(form.action, 'PATCH', buildSkillPayload(form));
                 document.getElementById('edit-skill-modal').hidePopover();
-                showToast('Berhasil', result.message, 'success');
-                fetchSkills(searchInput ? searchInput.value.trim() : '');
+                showToast('Berhasil', 'Skill berhasil diperbarui.', 'success');
+                await fetchSkills(searchInput.value.trim());
             } catch (error) {
-                console.error('Error updating skill:', error);
-                showToast('Gagal memperbarui skill', 'Tidak dapat terhubung ke server. Silakan coba lagi.', 'error');
+                const messages = showSkillEditErrors(form, error.data);
+                showToast('Gagal memperbarui skill', messages.join(' ') || error.message, 'error');
             } finally {
                 submitButton.disabled = false;
             }
         }
 
-        // Event Listeners
-        if (searchInput) {
-            searchInput.addEventListener("input", function() {
-                clearTimeout(searchDebounceTimer);
-                searchDebounceTimer = setTimeout(searchProjects, SEARCH_DEBOUNCE_DELAY);
-            });
+        async function executeDeleteSkillAjax(event) {
+            event.preventDefault();
+            if (!activeDeleteId) return;
+            const form = document.getElementById('global-delete-skill-form');
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            try {
+                await writeSkill(skillsEndpoint(DETAIL_SKILLS_ENDPOINT, activeDeleteId), 'DELETE');
+                closeDeleteSkillModal();
+                activeDeleteId = null;
+                showToast('Berhasil', 'Skill berhasil dihapus.', 'success');
+                await fetchSkills(searchInput.value.trim());
+            } catch (error) {
+                showToast('Gagal menghapus skill', error.message, 'error');
+            } finally {
+                submitButton.disabled = false;
+            }
         }
 
+        gridContainer.addEventListener('click', async event => {
+            const button = event.target.closest('button[data-action]');
+            if (!button || button.disabled) return;
+            const { action, id } = button.dataset;
+            const skill = skillsById.get(id);
+            if (!skill) return;
+            if (action === 'edit') {
+                openEditSkill(skill);
+                return;
+            }
+            if (action === 'delete') {
+                openDeleteSkillModal(skill);
+                return;
+            }
+            button.disabled = true;
+            try {
+                await writeSkill(skillsEndpoint(STAR_SKILLS_ENDPOINT, id), 'POST');
+                await fetchSkills(searchInput.value.trim());
+            } catch (error) {
+                showToast('Gagal memperbarui star', error.message, 'error');
+            } finally {
+                button.disabled = false;
+            }
+        });
+
+        if (skillForm) skillForm.addEventListener('submit', addSkill);
+        if (editSkillForm) editSkillForm.addEventListener('submit', updateSkill);
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchDebounceTimer);
+                searchDebounceTimer = setTimeout(
+                    () => fetchSkills(searchInput.value.trim()), 300,
+                );
+            });
+        }
         if (searchForm) {
-            searchForm.addEventListener("submit", function(event) {
+            searchForm.addEventListener('submit', event => {
                 event.preventDefault();
                 clearTimeout(searchDebounceTimer);
-                searchProjects();
+                fetchSkills(searchInput.value.trim());
             });
         }
-
-        if (skillForm) {
-            skillForm.addEventListener('submit', addSkill);
-        }
-
-        const editSkillForm = document.getElementById('edit-skill-form');
-        if (editSkillForm) {
-            editSkillForm.addEventListener('submit', updateSkill);
-        }
-
-        // Initial Fetch
-        searchProjects();
+        fetchSkills(searchInput.value.trim());
     </script>
 {% endblock content %}

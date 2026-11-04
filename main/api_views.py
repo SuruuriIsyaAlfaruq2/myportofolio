@@ -7,9 +7,9 @@ from rest_framework.decorators import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from main.models import Experience
-from main.permissions import IsPortfolioOwnerOrReadOnly, IsPortfolioOwnerOrEditorOrReadOnly
-from main.serializers import ExperienceSerializer
+from main.models import Educations, Experience, Skills
+from main.permissions import IsPortfolioOwnerOrEditorOrReadOnly
+from main.serializers import EducationsSerializer, ExperienceSerializer, SkillsSerializer
 
 
 @api_view(["GET", "HEAD", "POST"])
@@ -64,4 +64,118 @@ def experience_star(request, experience_id):
     else:
         experience.starred_by.add(request.user)
     serializer = ExperienceSerializer(experience, context={"request": request})
+    return Response(serializer.data)
+
+
+@api_view(["GET", "HEAD", "POST"])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsPortfolioOwnerOrEditorOrReadOnly])
+def skills_list(request):
+    if request.method in ("GET", "HEAD"):
+        skills = Skills.objects.prefetch_related("starred_by")
+        title = request.query_params.get("title", "").strip()
+        if title:
+            skills = skills.filter(title__icontains=title)
+        serializer = SkillsSerializer(
+            skills, many=True, context={"request": request},
+        )
+        return Response(serializer.data)
+
+    serializer = SkillsSerializer(data=request.data, context={"request": request})
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET", "HEAD", "PUT", "PATCH", "DELETE"])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsPortfolioOwnerOrEditorOrReadOnly])
+def skills_detail(request, skills_id):
+    skill = get_object_or_404(
+        Skills.objects.prefetch_related("starred_by"), pk=skills_id,
+    )
+    if request.method in ("GET", "HEAD"):
+        serializer = SkillsSerializer(skill, context={"request": request})
+        return Response(serializer.data)
+
+    if request.method == "DELETE":
+        skill.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    serializer = SkillsSerializer(
+        skill, data=request.data, partial=request.method == "PATCH",
+        context={"request": request},
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data)
+
+
+@api_view(["POST"])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def skills_star(request, skills_id):
+    skill = get_object_or_404(Skills, pk=skills_id)
+    if skill.starred_by.filter(pk=request.user.pk).exists():
+        skill.starred_by.remove(request.user)
+    else:
+        skill.starred_by.add(request.user)
+    serializer = SkillsSerializer(skill, context={"request": request})
+    return Response(serializer.data)
+
+
+@api_view(["GET", "HEAD", "POST"])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsPortfolioOwnerOrEditorOrReadOnly])
+def educations_list(request):
+    if request.method in ("GET", "HEAD"):
+        educations = Educations.objects.prefetch_related("starred_by")
+        institution = request.query_params.get("institution", "").strip()
+        if institution:
+            educations = educations.filter(institution__icontains=institution)
+        serializer = EducationsSerializer(
+            educations, many=True, context={"request": request},
+        )
+        return Response(serializer.data)
+
+    serializer = EducationsSerializer(data=request.data, context={"request": request})
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET", "HEAD", "PUT", "PATCH", "DELETE"])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsPortfolioOwnerOrEditorOrReadOnly])
+def educations_detail(request, educations_id):
+    education = get_object_or_404(
+        Educations.objects.prefetch_related("starred_by"), pk=educations_id,
+    )
+    if request.method in ("GET", "HEAD"):
+        serializer = EducationsSerializer(education, context={"request": request})
+        return Response(serializer.data)
+
+    if request.method == "DELETE":
+        education.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    serializer = EducationsSerializer(
+        education, data=request.data, partial=request.method == "PATCH",
+        context={"request": request},
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data)
+
+
+@api_view(["POST"])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def educations_star(request, educations_id):
+    education = get_object_or_404(Educations, pk=educations_id)
+    if education.starred_by.filter(pk=request.user.pk).exists():
+        education.starred_by.remove(request.user)
+    else:
+        education.starred_by.add(request.user)
+    serializer = EducationsSerializer(education, context={"request": request})
     return Response(serializer.data)
