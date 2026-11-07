@@ -181,7 +181,7 @@
             const star = IS_AUTHENTICATED
                 ? `<button type="button" class="button button-star${experience.is_starred ? ' is-starred' : ''}"
                     data-action="star" data-id="${escapeHtml(experience.id)}"
-                    title="${escapeHtml(experience.starred_by_names)}">
+                    title="Disukai Oleh: ${escapeHtml(experience.starred_by_names)}">
                     ${experience.is_starred ? 'Unstar' : 'Star'} (${experience.star_count})</button>`
                 : `<a href="{% url 'main:login' %}" class="button">Login untuk memberi star (${experience.star_count})</a>`;
             const edit = IS_PERMISSIBLE

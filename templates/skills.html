@@ -143,7 +143,7 @@
             const star = IS_AUTHENTICATED
                 ? `<button type="button" class="button button-star${skill.is_starred ? ' is-starred' : ''}"
                     data-action="star" data-id="${escapeHtml(skill.id)}"
-                    title="${escapeHtml(skill.starred_by_names)}">
+                    title="Disukai Oleh: ${escapeHtml(skill.starred_by_names)}">
                     <span aria-hidden="true">★</span> ${skill.is_starred ? 'Unstar' : 'Star'}
                     <span class="star-count">${Number(skill.star_count) || 0}</span></button>`
                 : `<a href="{% url 'main:login' %}" class="button">Login untuk memberi star (${Number(skill.star_count) || 0})</a>`;

@@ -570,3 +570,144 @@ class EducationsAPITest(APITestCase):
             self.client.delete(self.list_url).status_code,
             status.HTTP_405_METHOD_NOT_ALLOWED,
         )
+
+
+class ApiEndpointTemplateWiringTests(APITestCase):
+    def test_dynamic_pages_reference_star_api_endpoints(self):
+        experience_response = self.client.get(reverse("main:show_experience"))
+        education_response = self.client.get(reverse("main:show_educations"))
+
+        self.assertContains(
+            experience_response, "function buildExperienceCardElement",
+        )
+        self.assertContains(
+            experience_response,
+            reverse(
+                "api:experience-star",
+                args=["00000000-0000-0000-0000-000000000000"],
+            ),
+        )
+        self.assertContains(
+            education_response, "function buildEducationCard",
+        )
+        self.assertContains(
+            education_response,
+            reverse(
+                "api:educations-star",
+                args=["00000000-0000-0000-0000-000000000000"],
+            ),
+        )
+
+
+class LegacyJsonEndpointsAPITest(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="legacy-star-user", password="test-password",
+        )
+        self.experience = Experience.objects.create(
+            title="Legacy experience",
+            description="Experience description",
+            category="research",
+        )
+        self.education = Educations.objects.create(
+            institution="Legacy University",
+            major="Information Systems",
+            start_year=2025,
+        )
+        self.experience.starred_by.add(self.user)
+        self.education.starred_by.add(self.user)
+        self.client.force_login(self.user)
+
+    def test_legacy_experience_and_education_json_include_star_state(self):
+        experience_response = self.client.get(
+            reverse("main:get_experiences_json"),
+        )
+        education_response = self.client.get(
+            reverse("main:get_educations_json"),
+            {"institution": "Legacy"},
+        )
+
+        self.assertEqual(experience_response.status_code, status.HTTP_200_OK)
+        self.assertTrue(experience_response.json()[0]["fields"]["is_starred"])
+        self.assertEqual(experience_response.json()[0]["fields"]["star_count"], 1)
+        self.assertEqual(education_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(education_response.json()), 1)
+        self.assertTrue(education_response.json()[0]["fields"]["is_starred"])
+        self.assertEqual(education_response.json()[0]["fields"]["star_count"], 1)
+
+
+class LegacyAjaxEndpointsAPITest(APITestCase):
+    def setUp(self):
+        self.editor = User.objects.create_user(
+            username="legacy-editor", password="test-password",
+        )
+        self.editor.groups.add(Group.objects.create(name="Editor"))
+        self.experience = Experience.objects.create(
+            title="Original experience",
+            description="Original description",
+            category="research",
+        )
+        self.education = Educations.objects.create(
+            institution="Original University",
+            major="Original major",
+            start_year=2022,
+        )
+        self.skill = Skills.objects.create(
+            category="hardskills",
+            title="Original skill",
+            description="Original skill description",
+        )
+        self.client.force_login(self.editor)
+
+    def test_editor_can_update_legacy_ajax_endpoints(self):
+        experience_response = self.client.post(
+            reverse("main:update_experience_ajax", args=[self.experience.id]),
+            {
+                "title": "Experience updated",
+                "description": "Updated description",
+                "category": "research",
+                "thumbnail": "",
+                "started_at": "2025-01-01T10:00",
+                "ended_at": "",
+            },
+        )
+        education_response = self.client.post(
+            reverse("main:update_education_ajax", args=[self.education.id]),
+            {
+                "institution": "Updated University",
+                "major": "Updated major",
+                "thumbnail": "",
+                "start_year": 2024,
+                "end_year": "",
+            },
+        )
+        skill_response = self.client.post(
+            reverse("main:update_skill_ajax", args=[self.skill.id]),
+            {
+                "category": "softskills",
+                "title": "Updated skill",
+                "description": "Updated skill description",
+                "thumbnail": "",
+            },
+        )
+
+        self.assertEqual(experience_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(education_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(skill_response.status_code, status.HTTP_200_OK)
+        self.experience.refresh_from_db()
+        self.education.refresh_from_db()
+        self.skill.refresh_from_db()
+        self.assertEqual(self.experience.title, "Experience updated")
+        self.assertEqual(self.education.institution, "Updated University")
+        self.assertEqual(self.skill.title, "Updated skill")
+
+    def test_legacy_ajax_update_rejects_invalid_form_data(self):
+        response = self.client.post(
+            reverse("main:update_education_ajax", args=[self.education.id]),
+            {"institution": "", "major": "", "start_year": "not-a-year"},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("errors", response.json())
+        self.education.refresh_from_db()
+        self.assertEqual(self.education.institution, "Original University")

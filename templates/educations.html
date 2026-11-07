@@ -146,7 +146,7 @@
             const star = IS_AUTHENTICATED
                 ? `<button type="button" class="button button-star${education.is_starred ? ' is-starred' : ''}"
                     data-action="star" data-id="${escapeHtml(education.id)}"
-                    title="${escapeHtml(education.starred_by_names)}">
+                    title="Disukai Oleh: ${escapeHtml(education.starred_by_names)}">
                     <span aria-hidden="true">★</span> ${education.is_starred ? 'Unstar' : 'Star'}
                     <span class="star-count">${Number(education.star_count) || 0}</span></button>`
                 : `<a href="{% url 'main:login' %}" class="button">Login untuk memberi star (${Number(education.star_count) || 0})</a>`;
@@ -169,7 +169,7 @@
                             <p class="education-major">${escapeHtml(education.major)}</p>
                         </div>
                     </div>
-                    <div class="skill-card-actions education-card-actions project-actions">
+                    <div class="education-card-actions">
                         ${edit}${remove}${star}
                     </div>
                 </div>`;

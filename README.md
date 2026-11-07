@@ -111,13 +111,42 @@ Pada Tugas 2 ini saya menggunakan AI untuk eksplorasi penggunaan shell, karena d
 2. await merupakan keyword yang hanya bisa digunakan di dalam async function dan berfungsi untuk “menunggu” Promise selesai diproses sebelum melanjutkan ke baris kode berikutnya. Tanpa await, sebuah Promise akan tetap berjalan di belakang layar dan kode berikutnya akan langsung dieksekusi tanpa menunggu hasilnya. Misal, ada variabel yang mengambil data dari database, dan kode setelahnya mencetak data tersebut. Tanpa await, ketika pengambilan data belum selesai, apa yang dicetak bukan merupakan data yang diinginkan.
 3. Cross-Site Scripting (XSS) adalah serangan ketika penyerang berhasil menyisipkan kode JavaScript miliknya ke dalam halaman web yang kemudian dijalankan di browser pengguna lain. Data yang ditampilkan JavaScript lebih rentan karena pada Template Django, dilakukan auto escaping pada setiap { variabel } sehingga browser menampilkannya sebagai teks biasa, bukan sebagai tag HTML. Sedangkan dengan JavaScript, data dari JSON disisipkan ke dalam template literal lalu dipasang lewat innerHTML tanpa adanya auto-escaping.
 
+### Tugas 6
+1. 
+    - REST merupakan singkatan dari REpresentational State Transfer. REST adalah gaya arsitektur perangkat lunak yang mendeskripsikan antarmuka seragam di antara komponen-komponen yang terpisah secara fisik, sering kali melalui Internet dalam arsitektur Client-Server. 
+    - Tidak cukup karena return JSON saja bahkan tidak mematuhi The Richardson Maturity Model & HATEOAS
+    - Perbedaan mendasar antara PUT dan PATCH terletak pada apa saja sata yang diupdate. PUT akan mengganti seluruh field dengan field yang baru, contoh: memperbarui profil pengguna secara keseluruhan. Sedangkan PATCH hanya mengganti beberapa fields saja, cocok untuk memperbarui harga barang yang tidak perlu pembaruan pada data informasi barang lainnya.
+2. 
+    - Peran Serialization pada Django REST Framework adalah sebagai Serialization serta Deserialization & Validation. 
+        a. Serialization
+            Mengonversi objek kompleks seperti Django ORM Model instances atau QuerySets menjadi tipe data bawaan Python (dictionary, list, primitives), yang kemudian mudah dirender menjadi format JSON atau XML oleh
+        b. Deserialization
+            Menerima data payload JSON dari request body, memvalidasinya berdasarkan aturan skema (schema rules), dan mengubahnya kembali menjadi instance model Django atau dictionary Python yang aman untuk disimpan ke database
+    - Keuntungan Serializer dibandingkan merakit dictionary manual:
+        a. Validasi
+            Pada cara manual, validasi memerlukan if-else bertingkat, sedangkan pada Serializers menggunakan validasi bawaan dan bahkan dapat return response 400 jika tidak valid
+        b. Integrasi Django ORM
+            Pada cara manual, ketika ada perubahan pada model, maka perakitan harus diubah manual, namun pada serializers tidak perlu secara manual
+        c. Relasi antar data
+            Pada cara manual, data relasi perlu diambil secara looping manual. Sementara pada Serializers memiliki cara untuk mengambil data dengan mudah
+3. 
+    - Autentikasi vs Otorisasi 
+        a. Autentikasi
+            Memeriksa indentitas pengguna (who are you?) 
+        b. Otorisasi
+            Memeriksa apa saja yang boleh dilakukan pengguna (What are you allowed to do?)
+    - Karena pengguna dapat memanipulasi DOM di browser sehingga tombol tersembunyi pun dapat diakses, Oleh karena itu perlu validasi pada Permissions sebagai proteksi tambahan.
+4. 
+    - Karena pengguna bisa saja membuka browser berbahaya ketika masih login pada browser yang dapat dianggap valid pada SessionAuthentication maka dari itu perlu csrf_token untuk memastikan request bukan dari sumber aneh
+    - Karena force_authenticate mengabaikan mekanisme pemeriksaan autentikasi dan otorisasi standar HTTP sehingga tidak memerlukan csrf_token. Artinya, test hanya mengecek validasi internal dan tidak memeriksa kerentanan terhadap Cross-Site Request Forgery
+
 
 ### AI Disclosure
-Pernyataan di bawah menggunakan format 
-[Tutorial/Tugas index] - [Deskripsi Singkat]: [URL chat with AI]
-
-Tugas 1 - brainstorming mengenai attribut yang sebaiknya digunakan pada css
-Tugas 2 - Eksplorasi penggunaan shell
-Tugas 3 - Tatacara membuat Deskripsi aplikasi dan Instruksi Setup:https://share.gemini.google/yJpoKnpynzZk 
-Tugas 4 - Cara merapikan css untuk tombol : https://share.gemini.google/CvSlpaLtdTuc 
-Tugas 5 - Cara implementasi modal delete dan update : https://chatgpt.com/share/6ac0cb4f-e594-83ec-8caf-db37c07944e3
+| Tugas | Deskripsi | Tautan percakapan AI |
+|---|---|---|
+| 1 | Brainstorming mengenai atribut yang sebaiknya digunakan pada CSS | — |
+| 2 | Eksplorasi penggunaan shell | — |
+| 3 | Tatacara membuat deskripsi aplikasi dan instruksi setup | [Gemini](https://share.gemini.google/yJpoKnpynzZk) |
+| 4 | Cara merapikan CSS untuk tombol | [Gemini](https://share.gemini.google/CvSlpaLtdTuc) |
+| 5 | Cara implementasi modal delete dan update | [ChatGPT](https://chatgpt.com/share/6ac0cb4f-e594-83ec-8caf-db37c07944e3) |
+| 6 | Memperdalam pengetahuan terhadap pertanyaan refleksi | [Gemini](https://share.gemini.google/6T6f1HHyUsFJ) |

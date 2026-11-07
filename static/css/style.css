@@ -576,6 +576,10 @@ h1, .brand {
     flex-direction: column;
 }
 
+.project-grid .button-star {
+    margin-top: 0;
+}
+
 .project-image {
     display: block;
     width: 100%;
